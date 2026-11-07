@@ -1,0 +1,20 @@
+node_modules/
+dist/
+coverage/
+*.log
+
+# 환경변수 / 비밀값 - 절대 커밋 금지
+.env
+.env.*
+!.env.example
+
+# 로컬 SQLite DB
+*.db
+*.db-journal
+
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# 빌드 캐시
+*.tsbuildinfo

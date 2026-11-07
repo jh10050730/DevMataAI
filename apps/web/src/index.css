@@ -1,0 +1,46 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* 테마 토큰: 라이트 기본값 + .dark 에서 다크 네이비/차콜로 교체 */
+:root {
+  --bg: #f5f6fa;
+  --surface: #ffffff;
+  --surface-2: #f0f2f7;
+  --border: #e2e5ee;
+  --fg: #111827;
+  --muted: #6b7280;
+}
+.dark {
+  --bg: #0a0e17;
+  --surface: #111725;
+  --surface-2: #182033;
+  --border: #232c40;
+  --fg: #e5e8f0;
+  --muted: #8a93a8;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --font-sans: 'Pretendard', 'Inter', system-ui, -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+  color-scheme: light;
+}
+.dark body {
+  color-scheme: dark;
+}

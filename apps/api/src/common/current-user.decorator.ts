@@ -1,0 +1,11 @@
+import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+}
+
+/** JwtAuthGuard 가 검증한 사용자 */
+export const CurrentUser = createParamDecorator((_: unknown, ctx: ExecutionContext): AuthUser => {
+  return ctx.switchToHttp().getRequest().user;
+});

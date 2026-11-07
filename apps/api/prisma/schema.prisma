@@ -1,0 +1,219 @@
+// DevMate AI 데이터베이스 스키마 (MySQL 8)
+// 스키마를 바꾼 뒤에는 `npm run db:migrate -w apps/api -- --name <변경이름>` 으로 마이그레이션을 만든다.
+// enum 대신 문자열 + 서버 검증(class-validator)을 사용한다.
+// MySQL 문자열 기본 길이는 VARCHAR(191) 이므로, 더 길 수 있는 필드는 @db.VarChar(n) / @db.Text 로 지정한다.
+// (한글은 utf8mb4 에서 글자당 3바이트)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model NewsArticle {
+  id          String    @id @default(cuid())
+  url         String    @unique @db.VarChar(700)
+  title       String    @db.VarChar(500)
+  source      String
+  category    String
+  excerpt     String    @db.Text
+  publishedAt DateTime?
+  collectedAt DateTime  @default(now())
+
+  @@index([publishedAt])
+}
+
+model NewsCollectionState {
+  id            String    @id @default("daily")
+  completedDay  String?
+  lastAttemptAt DateTime?
+  lastResult    String    @default("{}") @db.VarChar(8000)
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique @db.VarChar(254)
+  name         String   @db.VarChar(100)
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tasks         Task[]
+  events        Event[]
+  integrations  Integration[]
+  aiUsageLogs   AiUsageLog[]
+  studySubjects StudySubject[]
+  studyNotes    StudyNote[]
+  projects      Project[]
+}
+
+/// 할 일. priority: LOW | MEDIUM | HIGH | URGENT, category: GENERAL | STUDY | DEV | SCHOOL | PERSONAL
+model Task {
+  id          String    @id @default(cuid())
+  userId      String
+  title       String    @db.VarChar(200)
+  description String?   @db.Text
+  priority    String    @default("MEDIUM")
+  category    String    @default("GENERAL")
+  dueDate     DateTime?
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  /// 데모 데이터 여부 (실제 데이터와 구분)
+  isDemo      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, completed])
+  @@index([userId, dueDate])
+}
+
+model Project {
+  id String @id @default(cuid())
+  userId String
+  name String @db.VarChar(120)
+  goal String @db.Text
+  description String @db.Text
+  repository String @default("") @db.VarChar(200)
+  status String @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items ProjectItem[]
+  reports ProjectReport[]
+  @@index([userId])
+}
+model ProjectItem {
+  id String @id @default(cuid())
+  projectId String
+  title String @db.VarChar(200)
+  kind String @default("TASK")
+  status String @default("TODO")
+  notes String @db.Text
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  @@index([projectId, status])
+}
+model ProjectReport {
+  id String @id @default(cuid())
+  projectId String
+  content String @db.MediumText
+  demo Boolean @default(false)
+  provider String
+  evidence String @db.MediumText
+  createdAt DateTime @default(now())
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  @@index([projectId, createdAt])
+}
+
+/// 일정. source: LOCAL | GOOGLE (외부 동기화 시 externalId 사용)
+model Event {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String   @db.VarChar(200)
+  description String?  @db.Text
+  location    String?  @db.VarChar(200)
+  startAt     DateTime
+  endAt       DateTime
+  allDay      Boolean  @default(false)
+  color       String?
+  category    String   @default("GENERAL")
+  source      String   @default("LOCAL")
+  externalId  String?
+  isDemo      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, source, externalId])
+  @@index([userId, startAt])
+}
+
+/// 외부 서비스 연결 정보. provider: GOOGLE_CALENDAR | NOTION | GITHUB
+/// 토큰은 프론트엔드로 절대 내보내지 않는다.
+model Integration {
+  id           String    @id @default(cuid())
+  userId       String
+  provider     String
+  status       String    @default("DISCONNECTED")
+  accessToken  String?   @db.Text
+  refreshToken String?   @db.Text
+  scope        String?   @db.Text
+  expiresAt    DateTime?
+  /// JSON 문자열 (계정명 등 공개 가능한 메타데이터)
+  metadata     String?   @db.Text
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+}
+
+/// AI 호출 기록 (사용량 / 오류 관리). 프롬프트 원문은 저장하지 않는다.
+model AiUsageLog {
+  id           String   @id @default(cuid())
+  userId       String?
+  provider     String
+  model        String?
+  feature      String
+  success      Boolean
+  errorMessage String?  @db.VarChar(500)
+  latencyMs    Int
+  inputChars   Int
+  outputChars  Int
+  inputTokens  Int?
+  outputTokens Int?
+  createdAt    DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+}
+
+model StudySubject {
+  id        String      @id @default(cuid())
+  userId    String
+  name      String      @db.VarChar(80)
+  color     String      @default("#8b5cf6")
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes     StudyNote[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model StudyNote {
+  id            String        @id @default(cuid())
+  userId        String
+  subjectId     String?
+  title         String        @db.VarChar(200)
+  /// 최대 50,000자 (한글 기준 약 150KB) → MEDIUMTEXT
+  content       String        @db.MediumText
+  /// JSON 배열 문자열 (최대 20개 × 40자)
+  tags          String        @default("[]") @db.VarChar(1000)
+  progress      Int           @default(0)
+  lastStudiedAt DateTime?
+  nextReviewAt  DateTime?
+  reviewCount   Int           @default(0)
+  notionPageId  String?       @db.VarChar(64)
+  notionSavedAt DateTime?
+  notionHash    String?       @db.VarChar(64)
+  isDemo        Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject       StudySubject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, notionPageId])
+  @@index([userId, nextReviewAt])
+  @@index([userId, subjectId])
+}

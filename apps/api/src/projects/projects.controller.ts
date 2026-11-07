@@ -1,0 +1,19 @@
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { AuthUser, CurrentUser } from '../common/current-user.decorator';
+import { ProjectsService } from './projects.service';
+import { CreateProjectDto, UpdateProjectDto, CreateProjectItemDto, UpdateProjectItemDto } from './projects.dto';
+@Controller('projects')
+export class ProjectsController {
+  constructor(private readonly projects: ProjectsService) {}
+  @Get() list(@CurrentUser() u: AuthUser) { return this.projects.list(u.id); }
+  @Post() create(@CurrentUser() u: AuthUser, @Body() dto: CreateProjectDto) { return this.projects.save(u.id, dto); }
+  @Get(':id') get(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.projects.owned(u.id, id); }
+  @Patch(':id') update(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: UpdateProjectDto) { return this.projects.save(u.id, dto, id); }
+  @Delete(':id') remove(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.projects.remove(u.id, id); }
+  @Post(':id/items') item(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: CreateProjectItemDto) { return this.projects.item(u.id, id, dto); }
+  @Patch(':id/items/:itemId') updateItem(@CurrentUser() u: AuthUser, @Param('id') id: string, @Param('itemId') itemId: string, @Body() dto: UpdateProjectItemDto) { return this.projects.item(u.id, id, dto, itemId); }
+  @Delete(':id/items/:itemId') removeItem(@CurrentUser() u: AuthUser, @Param('id') id: string, @Param('itemId') itemId: string) { return this.projects.removeItem(u.id, id, itemId); }
+  @Get(':id/github') github(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.projects.activity(u.id, id); }
+  @Get(':id/reports') reports(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.projects.reports(u.id, id); }
+  @Post(':id/reports') report(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.projects.report(u.id, id); }
+}

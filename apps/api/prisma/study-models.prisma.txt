@@ -1,0 +1,34 @@
+// Phase 2 models: append to schema.prisma (kept separately until Phase 1 schema is ready).
+model StudySubject {
+  id        String @id @default(cuid())
+  userId    String
+  name      String
+  color     String @default("#8b5cf6")
+  createdAt DateTime @default(now())
+  notes     StudyNote[]
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model StudyNote {
+  id             String @id @default(cuid())
+  userId         String
+  subjectId      String?
+  title          String
+  content        String @default("")
+  tags           String @default("[]")
+  progress       Int @default(0)
+  lastStudiedAt  DateTime?
+  nextReviewAt   DateTime?
+  reviewCount    Int @default(0)
+  notionPageId   String?
+  notionSavedAt  DateTime?
+  notionHash     String?
+  isDemo         Boolean @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  subject StudySubject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  @@unique([userId, notionPageId])
+  @@index([userId, nextReviewAt])
+  @@index([userId, subjectId])
+}
