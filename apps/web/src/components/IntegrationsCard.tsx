@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { api, errorMessage } from '../lib/api';
 import { getIntegrationStatus } from '../lib/study';
 import { useAsync } from '../lib/useAsync';
+import GoogleCalendarPanel from './GoogleCalendarPanel';
 import { Badge, Button, Card, ErrorState, Skeleton } from './ui';
 
 type Tone = 'live' | 'demo' | 'off' | 'error';
@@ -79,7 +80,9 @@ export default function IntegrationsCard() {
               tone={!data.notion.configured ? 'off' : data.notion.ok ? 'live' : 'error'}
             />
             <Row name="GitHub" desc={data.github.detail} tone={data.github.configured ? 'live' : 'off'} />
-            <Row name="Google Calendar" desc={data.googleCalendar.detail} tone={data.googleCalendar.configured ? 'live' : 'off'} />
+            <Row name="Google Calendar" desc={data.googleCalendar.detail} tone={data.googleCalendar.configured ? 'live' : 'off'}>
+              <GoogleCalendarPanel />
+            </Row>
           </ul>
         )
       )}

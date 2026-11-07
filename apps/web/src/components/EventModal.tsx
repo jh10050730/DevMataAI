@@ -110,10 +110,18 @@ export default function EventModal({
   };
 
   const inputType = allDay ? 'date' : 'datetime-local';
+  // Google Calendar 에서 가져온 일정은 읽기 전용 (서버도 수정·삭제를 거부)
+  const readOnly = !!event && event.source !== 'LOCAL';
 
   return (
-    <Modal open={open} onClose={onClose} title={event ? '일정 수정' : '새 일정'}>
+    <Modal open={open} onClose={onClose} title={readOnly ? 'Google Calendar 일정' : event ? '일정 수정' : '새 일정'}>
       <form onSubmit={onSubmit} className="space-y-4">
+        {readOnly && (
+          <p className="rounded-lg bg-blue-500/10 px-3 py-2 text-xs text-blue-600 dark:text-blue-400">
+            Google Calendar 에서 가져온 일정이라 여기서는 볼 수만 있어요. 수정·삭제는 Google Calendar 에서 한 뒤 설정 화면에서 동기화하세요.
+          </p>
+        )}
+        <fieldset disabled={readOnly} className="space-y-4 disabled:opacity-80">
         <Field label="제목">
           <Input value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={200} autoFocus />
         </Field>
@@ -146,10 +154,11 @@ export default function EventModal({
         <Field label="메모 (선택)">
           <Textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={5000} />
         </Field>
+        </fieldset>
         {error && <p className="text-sm text-red-500">{error}</p>}
 
         <div className="flex items-center justify-between gap-2">
-          {event ? (
+          {event && !readOnly ? (
             confirmDelete ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted">삭제할까요?</span>
@@ -169,12 +178,14 @@ export default function EventModal({
             <span />
           )}
           <div className="flex gap-2">
-            <Button type="button" variant="ghost" onClick={onClose}>
-              취소
+            <Button type="button" variant={readOnly ? 'secondary' : 'ghost'} onClick={onClose}>
+              {readOnly ? '닫기' : '취소'}
             </Button>
-            <Button type="submit" loading={saving}>
-              저장
-            </Button>
+            {!readOnly && (
+              <Button type="submit" loading={saving}>
+                저장
+              </Button>
+            )}
           </div>
         </div>
       </form>

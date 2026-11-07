@@ -21,7 +21,10 @@ export class IntegrationsController {
       github: { configured: !!this.config.get('GITHUB_TOKEN'), detail: 'Phase 4 에서 연결 예정' },
       googleCalendar: {
         configured: !!(this.config.get('GOOGLE_CLIENT_ID') && this.config.get('GOOGLE_CLIENT_SECRET')),
-        detail: '추후 연결 예정',
+        detail:
+          this.config.get('GOOGLE_CLIENT_ID') && this.config.get('GOOGLE_CLIENT_SECRET')
+            ? '아래에서 Google 계정을 연결하세요 (읽기 전용)'
+            : 'Google OAuth 클라이언트가 설정되지 않았습니다 (apps/api/.env 의 GOOGLE_CLIENT_ID 등).',
       },
     };
   }

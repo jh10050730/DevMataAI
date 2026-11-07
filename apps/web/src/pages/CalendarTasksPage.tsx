@@ -170,7 +170,7 @@ export default function CalendarTasksPage() {
                         )}
                       </span>
                     </span>
-                    <span className="text-[11px] text-muted">{CATEGORY_LABEL[e.category]}</span>
+                    <span className="text-[11px] text-muted">{e.source === 'GOOGLE' ? 'Google' : CATEGORY_LABEL[e.category]}</span>
                   </button>
                 </li>
               ))}
