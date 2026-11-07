@@ -122,7 +122,9 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
           const url = canonicalUrl(item.link ?? '');
           const title = plainText(item.title ?? '').slice(0, 500);
           if (!url || !title) continue;
-          const excerpt = plainText(item.contentSnippet ?? item.content ?? item.summary ?? '').slice(0, 1500);
+          const rawExcerpt = plainText(item.contentSnippet ?? item.content ?? item.summary ?? '');
+          // Hacker News 피드 본문은 "Article URL: … Comments URL: … Points: …" 메타데이터뿐이므로 발췌로 쓰지 않는다.
+          const excerpt = (/^Article URL:/i.test(rawExcerpt) ? '' : rawExcerpt).slice(0, 1500);
           const date = new Date(item.isoDate ?? item.pubDate ?? '');
           const publishedAt = Number.isFinite(date.getTime()) && date.getTime() <= Date.now() + 300000 ? date : null;
           try {

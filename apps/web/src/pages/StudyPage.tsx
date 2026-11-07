@@ -274,7 +274,7 @@ function SubjectsPanel({
       {adding && (
         <form onSubmit={add} className="mb-3 flex gap-2">
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="과목 이름" maxLength={80} autoFocus className="py-1.5" />
-          <Button type="submit" className="px-3 py-1.5 text-xs">
+          <Button type="submit" className="shrink-0 whitespace-nowrap px-3 py-1.5 text-xs">
             추가
           </Button>
         </form>
