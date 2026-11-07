@@ -16,6 +16,7 @@ import { AiModule } from './ai/ai.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { StudyToolsModule } from './study-tools/study-tools.module';
 import { ProjectsModule } from './projects/projects.module';
+import { AssistantModule } from './assistant/assistant.module';
 
 // Phase 2 이후 추가 예정: Study, Notes, News, Projects, Github, AI, Integrations
 @Module({
@@ -33,6 +34,7 @@ import { ProjectsModule } from './projects/projects.module';
     IntegrationsModule,
     StudyToolsModule,
     ProjectsModule,
+    AssistantModule,
   ],
   controllers: [HealthController],
   // 모든 API는 기본적으로 로그인 필요. 예외는 @Public()

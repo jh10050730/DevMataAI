@@ -23,7 +23,8 @@ export class ProjectsService {
     if (id) await this.owned(userId, id);
     if (data.name !== undefined && !data.name.trim()) throw new BadRequestException('프로젝트 이름을 입력하세요.');
     const values = { ...data, name: data.name?.trim() };
-    return id ? this.db.project.update({ where: { id }, data: values }) : this.db.project.create({ data: { goal: '', description: '', ...values, name: data.name!.trim(), userId } });
+    if (data.repository?.split('/').some(part => part === '.' || part === '..')) throw new BadRequestException('올바른 저장소 이름을 입력하세요.');
+    return id ? this.db.project.update({ where: { id }, data: values }) : this.db.project.create({ data: { ...values, goal: data.goal ?? '', description: data.description ?? '', name: data.name!.trim(), userId } });
   }
   async remove(userId: string, id: string) { await this.owned(userId, id); await this.db.project.delete({ where: { id } }); return { deleted: true }; }
   async item(userId: string, projectId: string, data: CreateProjectItemDto | UpdateProjectItemDto, id?: string) {
@@ -32,7 +33,7 @@ export class ProjectsService {
     if (data.title !== undefined && !data.title.trim()) throw new BadRequestException('작업 제목을 입력하세요.');
     const status = 'status' in data ? data.status : undefined;
     const values = { ...data, title: data.title?.trim(), ...(status ? { completedAt: status === 'DONE' ? project.items.find(i => i.id === id)?.completedAt ?? new Date() : null } : {}) };
-    return id ? this.db.projectItem.update({ where: { id }, data: values }) : this.db.projectItem.create({ data: { notes: '', ...values, title: data.title!.trim(), projectId } });
+    return id ? this.db.projectItem.update({ where: { id }, data: values }) : this.db.projectItem.create({ data: { ...values, notes: data.notes ?? '', title: data.title!.trim(), projectId } });
   }
   async removeItem(userId: string, projectId: string, id: string) {
     const project = await this.owned(userId, projectId);

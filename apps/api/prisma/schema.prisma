@@ -48,6 +48,7 @@ model User {
   studySubjects StudySubject[]
   studyNotes    StudyNote[]
   projects      Project[]
+  assistantActions AssistantAction[]
 }
 
 /// 할 일. priority: LOW | MEDIUM | HIGH | URGENT, category: GENERAL | STUDY | DEV | SCHOOL | PERSONAL
@@ -70,6 +71,21 @@ model Task {
 
   @@index([userId, completed])
   @@index([userId, dueDate])
+}
+
+model AssistantAction {
+  id String @id @default(cuid())
+  userId String
+  kind String
+  targetId String
+  targetTitle String @db.VarChar(500)
+  payload String @db.Text
+  targetUpdatedAt DateTime
+  expiresAt DateTime
+  consumed Boolean @default(false)
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, expiresAt])
 }
 
 model Project {

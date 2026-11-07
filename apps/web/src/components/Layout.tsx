@@ -22,11 +22,11 @@ import { cn } from './ui';
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/assistant', label: 'AI Assistant', icon: Bot, phase: 5 },
+  { to: '/assistant', label: 'AI Assistant', icon: Bot },
   { to: '/calendar', label: 'Calendar & Tasks', icon: CalendarCheck },
   { to: '/study', label: 'Study', icon: BookOpen },
   { to: '/news', label: 'News', icon: Newspaper },
-  { to: '/projects', label: 'Projects', icon: FolderGit2, phase: 4 },
+  { to: '/projects', label: 'Projects', icon: FolderGit2 },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -39,7 +39,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </div>
         <span className="font-semibold tracking-tight">DevMate AI</span>
       </div>
-      {NAV.map(({ to, label, icon: Icon, phase }) => (
+      {NAV.map(({ to, label, icon: Icon }) => (
         <NavLink
           key={to}
           to={to}
@@ -54,7 +54,6 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         >
           <Icon className="size-4 shrink-0" />
           <span className="flex-1">{label}</span>
-          {phase && <span className="rounded bg-surface-2 px-1.5 text-[10px] text-muted">P{phase}</span>}
         </NavLink>
       ))}
     </nav>
@@ -77,7 +76,7 @@ export default function Layout() {
   // 통합 검색: Phase 1 에서는 할 일 제목 검색 (Phase 5 에서 전체 데이터로 확장)
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
-    navigate(`/calendar?q=${encodeURIComponent(q.trim())}`);
+    navigate(`/assistant?q=${encodeURIComponent(q.trim().slice(0, 100))}`);
   };
 
   const initials = user?.name.slice(0, 1).toUpperCase() ?? '?';
@@ -113,7 +112,7 @@ export default function Layout() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="할 일 검색…"
+                placeholder="통합 검색…"
                 className="w-full rounded-lg border border-border bg-surface py-1.5 pl-9 pr-3 text-sm outline-none focus:border-blue-500"
               />
             </div>

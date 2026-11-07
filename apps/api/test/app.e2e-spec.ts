@@ -231,6 +231,135 @@ describe('DevMate API (e2e)', () => {
     });
   });
 
+  describe('Projects', () => {
+    let projectId: string;
+    let itemId: string;
+    let otherId: string;
+    it('프로젝트·기능·작업 생성과 완료 비율', async () => {
+      await api().get('/api/projects').expect(401);
+      const created = await api().post('/api/projects').set(auth(tokenA)).send({ name: ' 개인 앱 ', goal: '첫 배포' }).expect(201);
+      projectId = created.body.id;
+      expect(created.body.name).toBe('개인 앱');
+      const item = await api().post(`/api/projects/${projectId}/items`).set(auth(tokenA)).send({ title: '인증', kind: 'FEATURE' }).expect(201);
+      itemId = item.body.id;
+      await api().post(`/api/projects/${projectId}/items`).set(auth(tokenA)).send({ title: '테스트' }).expect(201);
+      const done = await api().patch(`/api/projects/${projectId}/items/${itemId}`).set(auth(tokenA)).send({ status: 'DONE' }).expect(200);
+      expect(done.body.completedAt).not.toBeNull();
+      const project = await api().get(`/api/projects/${projectId}`).set(auth(tokenA)).expect(200);
+      expect(project.body.progress).toEqual({ total: 2, done: 1, rate: 50 });
+      const other = await api().post('/api/projects').set(auth(tokenA)).send({ name: '다른 프로젝트' }).expect(201);
+      otherId = other.body.id;
+    });
+    it('다른 사용자 및 다른 프로젝트의 작업 접근 차단', async () => {
+      const list = await api().get('/api/projects').set(auth(tokenB)).expect(200);
+      expect(list.body).toEqual([]);
+      for (const path of ['', '/github', '/reports']) await api().get(`/api/projects/${projectId}${path}`).set(auth(tokenB)).expect(404);
+      await api().patch(`/api/projects/${projectId}`).set(auth(tokenB)).send({ name: '변조' }).expect(404);
+      await api().delete(`/api/projects/${projectId}`).set(auth(tokenB)).expect(404);
+      await api().post(`/api/projects/${projectId}/reports`).set(auth(tokenB)).expect(404);
+      await api().patch(`/api/projects/${otherId}/items/${itemId}`).set(auth(tokenA)).send({ status: 'DONE' }).expect(404);
+      await api().delete(`/api/projects/${projectId}/items/${itemId}`).set(auth(tokenB)).expect(404);
+    });
+    it('빈 이름·잘못된 저장소·상태·null 차단', async () => {
+      await api().post('/api/projects').set(auth(tokenA)).send({ name: '   ' }).expect(400);
+      await api().post('/api/projects').set(auth(tokenA)).send({ name: 'x', repository: 'https://example.com' }).expect(400);
+      await api().patch(`/api/projects/${projectId}`).set(auth(tokenA)).send({ name: null }).expect(400);
+      await api().patch(`/api/projects/${projectId}/items/${itemId}`).set(auth(tokenA)).send({ status: 'SUPER' }).expect(400);
+    });
+    it('완료를 되돌리면 완료일 초기화, 미설정 GitHub와 데모 보고서', async () => {
+      const undone = await api().patch(`/api/projects/${projectId}/items/${itemId}`).set(auth(tokenA)).send({ status: 'BLOCKED', notes: '배포 인증 문제' }).expect(200);
+      expect(undone.body.completedAt).toBeNull();
+      const github = await api().get(`/api/projects/${projectId}/github`).set(auth(tokenA)).expect(200);
+      expect(github.body.connected).toBe(false);
+      const report = await api().post(`/api/projects/${projectId}/reports`).set(auth(tokenA)).expect(201);
+      expect(report.body.demo).toBe(true);
+      const evidence = JSON.parse(report.body.evidence);
+      expect(evidence.project.progress.rate).toBe(0);
+      expect(evidence.completedThisWeek).toEqual([]);
+      const history = await api().get(`/api/projects/${projectId}/reports`).set(auth(tokenA)).expect(200);
+      expect(history.body[0].id).toBe(report.body.id);
+    });
+    it('프로젝트 삭제 시 작업과 보고서도 삭제', async () => {
+      await api().delete(`/api/projects/${projectId}`).set(auth(tokenA)).expect(200);
+      const db = app.get(PrismaService);
+      expect(await db.projectItem.count({ where: { projectId } })).toBe(0);
+      expect(await db.projectReport.count({ where: { projectId } })).toBe(0);
+      await api().get(`/api/projects/${projectId}`).set(auth(tokenA)).expect(404);
+    });
+  });
+
+  describe('Assistant', () => {
+    let taskId: string;
+    let foreignTaskId: string;
+    let projectId: string;
+    it('통합 검색과 브리핑은 다른 사용자 정보를 노출하지 않음', async () => {
+      await api().get('/api/assistant/briefing').expect(401);
+      const mine = await api().post('/api/tasks').set(auth(tokenA)).send({ title: '통합검증 내 작업', priority: 'HIGH' }).expect(201);
+      taskId = mine.body.id;
+      const foreign = await api().post('/api/tasks').set(auth(tokenB)).send({ title: '통합검증 비밀' }).expect(201);
+      foreignTaskId = foreign.body.id;
+      const project = await api().post('/api/projects').set(auth(tokenA)).send({ name: '통합검증 프로젝트', goal: '통합검증' }).expect(201);
+      projectId = project.body.id;
+      await api().post('/api/study/notes').set(auth(tokenA)).send({ title: '통합검증 학습', content: '통합검증 자료' }).expect(201);
+      const search = await api().get('/api/assistant/search?q=통합검증').set(auth(tokenA)).expect(200);
+      expect(search.body.results.some((r: { id: string }) => r.id === taskId)).toBe(true);
+      expect(search.body.results.some((r: { id: string }) => r.id === foreignTaskId)).toBe(false);
+      const brief = await api().get('/api/assistant/briefing').set(auth(tokenA)).expect(200);
+      expect(brief.body.timezone).toBe('Asia/Seoul');
+      expect(JSON.stringify(brief.body)).not.toContain('통합검증 비밀');
+      await api().get('/api/assistant/search?q=%20').set(auth(tokenA)).expect(400);
+    });
+    it('관련 추천은 소유 프로젝트와 노트만 연결', async () => {
+      const result = await api().get(`/api/assistant/recommendations/${projectId}`).set(auth(tokenA)).expect(200);
+      expect(result.body.notes.map((n: { title: string }) => n.title)).toContain('통합검증 학습');
+      await api().get(`/api/assistant/recommendations/${projectId}`).set(auth(tokenB)).expect(404);
+    });
+    it('제안만으로 변경하지 않으며 소유자 확인으로만 적용, 재실행 차단', async () => {
+      const proposal = await api().post('/api/assistant/actions').set(auth(tokenA)).send({ kind: 'task_complete', targetId: taskId }).expect(201);
+      expect((await app.get(PrismaService).task.findUniqueOrThrow({ where: { id: taskId } })).completed).toBe(false);
+      await api().post(`/api/assistant/actions/${proposal.body.id}/confirm`).set(auth(tokenB)).expect(404);
+      await api().post(`/api/assistant/actions/${proposal.body.id}/confirm`).set(auth(tokenA)).expect(201);
+      expect((await app.get(PrismaService).task.findUniqueOrThrow({ where: { id: taskId } })).completed).toBe(true);
+      await api().post(`/api/assistant/actions/${proposal.body.id}/confirm`).set(auth(tokenA)).expect(409);
+      await api().post('/api/assistant/actions').set(auth(tokenA)).send({ kind: 'task_delete', targetId: foreignTaskId }).expect(404);
+    });
+    it('취소·만료·변경된 대상은 실행하지 않음', async () => {
+      const propose = () => api().post('/api/assistant/actions').set(auth(tokenA)).send({ kind: 'task_rename', targetId: taskId, title: '새 제목' }).expect(201);
+      const cancelled = await propose();
+      await api().post(`/api/assistant/actions/${cancelled.body.id}/cancel`).set(auth(tokenA)).expect(201);
+      await api().post(`/api/assistant/actions/${cancelled.body.id}/confirm`).set(auth(tokenA)).expect(409);
+      const expired = await propose();
+      const db = app.get(PrismaService);
+      await db.assistantAction.update({ where: { id: expired.body.id }, data: { expiresAt: new Date(0) } });
+      await api().post(`/api/assistant/actions/${expired.body.id}/confirm`).set(auth(tokenA)).expect(409);
+      const stale = await propose();
+      await db.task.update({ where: { id: taskId }, data: { updatedAt: new Date(Date.now() + 10000) } });
+      await api().post(`/api/assistant/actions/${stale.body.id}/confirm`).set(auth(tokenA)).expect(409);
+      expect((await db.task.findUniqueOrThrow({ where: { id: taskId } })).title).toBe('통합검증 내 작업');
+    });
+    it('Google 사본 일정은 비서에서도 읽기 전용이며 제목 변경은 저장된 제안만 적용', async () => {
+      const me = await api().get('/api/users/me').set(auth(tokenA)).expect(200);
+      const db = app.get(PrismaService);
+      const event = await db.event.create({ data: { userId: me.body.id, title: '가져온 일정', source: 'GOOGLE', startAt: new Date(), endAt: new Date(Date.now() + 3600000) } });
+      await api().post('/api/assistant/actions').set(auth(tokenA)).send({ kind: 'event_delete', targetId: event.id }).expect(400);
+      expect(await db.event.findUnique({ where: { id: event.id } })).not.toBeNull();
+      await db.event.delete({ where: { id: event.id } });
+      const proposal = await api().post('/api/assistant/actions').set(auth(tokenA)).send({ kind: 'task_rename', targetId: taskId, title: '확인한 제목' }).expect(201);
+      await api().post(`/api/assistant/actions/${proposal.body.id}/confirm`).set(auth(tokenA)).send({ title: '위조한 제목' }).expect(201);
+      expect((await db.task.findUniqueOrThrow({ where: { id: taskId } })).title).toBe('확인한 제목');
+    });
+    it('확인한 삭제만 적용하며 잘못된 요청 차단', async () => {
+      const proposal = await api().post('/api/assistant/actions').set(auth(tokenA)).send({ kind: 'task_delete', targetId: taskId }).expect(201);
+      await api().post(`/api/assistant/actions/${proposal.body.id}/confirm`).set(auth(tokenA)).expect(201);
+      expect(await app.get(PrismaService).task.findUnique({ where: { id: taskId } })).toBeNull();
+      await api().post('/api/assistant/actions').set(auth(tokenA)).send({ kind: 'arbitrary', targetId: taskId }).expect(400);
+      await api().post('/api/assistant/chat').set(auth(tokenA)).send({ message: ' ' }).expect(400);
+      const chat = await api().post('/api/assistant/chat').set(auth(tokenA)).send({ message: '오늘 할 일을 알려줘' }).expect(201);
+      expect(chat.body.demo).toBe(true);
+      expect(chat.body.actions).toEqual([]);
+    });
+  });
+
   describe('Dashboard', () => {
     it('오늘 요약: 지난 마감 / 오늘 마감 / 오늘 일정', async () => {
       await api().post('/api/tasks').set(auth(tokenA)).send({ title: '지난 과제', dueDate: '2026-11-05T09:00:00.000Z' });

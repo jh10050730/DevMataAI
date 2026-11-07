@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "assistant:smoke": "node test/assistant-smoke.cjs",
+    "projects:smoke": "node test/projects-smoke.cjs",
     "news:smoke": "node test/news-smoke.cjs",
     "build": "nest build",
     "start": "node dist/main",
