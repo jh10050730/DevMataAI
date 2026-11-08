@@ -4,6 +4,7 @@ Phase 5 통합 비서: `/assistant`에서 한국 시간 기준 아침 브리핑,
 상단 검색도 할 일·일정·학습·프로젝트·프로젝트 작업·공용 뉴스를 함께 찾습니다 (종류별 최신 최대 20개).
 아침 브리핑은 오늘 일정·지난/오늘 마감·미완료 작업·복습·프로젝트 진행률·오늘 뉴스를 표시합니다.
 프로젝트를 고르면 이름·목표·설명의 키워드가 일치하는 저장된 노트와 뉴스를 각각 최대 5개 추천합니다.
+키워드는 한국어 조사(을·를·에서 등)와 "알려줘" 같은 요청어를 떼고 뽑습니다. 채팅도 질문 문장 전체가 아니라 이 키워드(최대 5개)로 관련 기록을 찾습니다.
 AI 답변은 저장된 앱 데이터의 제한된 조회 범위와 최근 대화 최대 8개를 사용합니다. 실시간 외부 정보나 원문을 읽었다고 가정하지 않습니다.
 채팅 기록은 이 화면에서만 유지되며 새로고침 시 초기화됩니다. 브리핑 데이터는 화면을 열거나 새로고침할 때 조회하며 자동 알림 발송 기능은 포함하지 않습니다.
 
@@ -102,8 +103,31 @@ npm run dev
 웹: http://localhost:5173 · API 상태 확인: http://localhost:3000/api/health
 웹에서 회원가입 후 사용합니다. 데이터는 MySQL `devmate` DB에 저장됩니다.
 스키마를 바꾼 뒤에는 `npm run db:migrate -w apps/api -- --name <변경이름>`으로 마이그레이션을 만듭니다 (`prisma/migrations`).
-스키마를 갱신하기 전에는 DB를 백업하세요 (`mysqldump`). 데이터 삭제를 허용하는 옵션은 일반 설정 과정에 필요하지 않습니다.
+스키마를 갱신하기 전에는 DB를 백업하세요 (아래 **DB 백업**). 데이터 삭제를 허용하는 옵션은 일반 설정 과정에 필요하지 않습니다.
 이전 SQLite 파일(`apps/api/prisma/dev.db`)은 더 이상 사용하지 않으며 지우지 않고 남겨 두었습니다.
+
+### 바로 실행 (Windows, `start.bat`)
+
+처음 설정(`.env`, MySQL, `npm run setup`)을 마친 뒤에는 저장소 루트의 `start.bat`을 더블클릭하면 됩니다.
+
+1. Node.js 설치와 `apps/api/.env` 존재를 확인합니다. 없으면 안내 후 멈춥니다.
+2. `MySQL84` 서비스가 꺼져 있으면 경고합니다 (`services.msc`에서 시작). 다른 버전이면 경고 문구만 무시하세요.
+3. `node_modules`가 없으면 `npm install`을 실행합니다.
+4. 새 마이그레이션이 있으면 `prisma migrate deploy`로 적용합니다 (데이터를 지우지 않음).
+5. `npm run dev`로 API와 웹을 켜고, API가 응답하면 브라우저에서 http://localhost:5173 을 엽니다 (최대 60초 대기).
+
+창을 닫으면 서버가 꺼집니다.
+
+### DB 백업 (`backup-db.bat`)
+
+`backup-db.bat`을 더블클릭하거나 `npm run db:backup`을 실행하면 `.env`의 `DATABASE_URL` DB를
+`backups/<DB이름>-YYYYMMDD-HHMMSS.sql`로 저장합니다 (`mysqldump --single-transaction`, utf8mb4).
+
+- `mysqldump`는 `C:\Program Files\MySQL\MySQL Server 8.4|9.0|8.0\bin`, 그다음 `PATH`에서 찾습니다. 다른 위치면 `MYSQLDUMP` 환경변수로 지정합니다.
+- 비밀번호는 명령줄이 아닌 환경변수로만 전달하며 화면에 출력하지 않습니다.
+- 실패하면 불완전한 파일을 지우고 오류를 표시합니다. 오래된 백업은 자동으로 지우지 않습니다.
+- 복원: `mysql -u devmate -p < backups\devmate-....sql` (덤프에 `CREATE DATABASE`/`USE`가 포함되어 같은 이름의 DB로 복원됩니다).
+- `backups/`는 Git에 올리지 않습니다.
 
 Windows에서 Prisma 생성 중 `query_engine-windows.dll.node`의 `EPERM` 오류가 발생하면
 이 프로젝트의 API 개발 서버를 종료한 후 `npm run db:generate -w apps/api`를 다시 실행하세요.
@@ -114,7 +138,9 @@ Windows에서 Prisma 생성 중 `query_engine-windows.dll.node`의 `EPERM` 오�
 - API: 학습 과목·노트 CRUD, 검색·태그 필터, 학습 진행률, 복습 기록과 다음 복습일 계산.
 - 웹: 학습 관리 화면 (과목·노트·마크다운·복습 기록), AI 학습 도우미, Notion 가져오기/저장, 연동 상태 화면.
 - AI: 노트 요약, 쉬운 설명, 핵심 용어, 객관식·주관식 문제, 노트 기반 질문 답변 (`POST /api/study/notes/:id/ai`).
-- 미완료: Google Calendar·GitHub 연동, 데모 데이터 관리, 프로젝트 관리, 통합 AI 비서.
+- 연동: Google Calendar 읽기 전용 동기화, GitHub 최근 활동 조회, Notion 가져오기/저장.
+- 프로젝트 관리와 주간 보고서, 통합 AI 비서 (위 Phase 4·5 설명 참고).
+- 미완료: 데모 데이터 관리, 브라우저 화면 자동 테스트.
 
 ### AI 설정 (API 키 불필요)
 
@@ -126,6 +152,29 @@ Windows에서 Prisma 생성 중 `query_engine-windows.dll.node`의 `EPERM` 오�
 - `AI_PROVIDER=demo`는 실제 AI를 호출하지 않고 "데모 응답"이라고 표시된 응답을 돌려줍니다 (테스트에서 사용).
 - 서버가 이 PC에서 실행될 때만 동작하며, 개인용으로만 사용하세요.
 - 호출 기록(성공/실패, 지연 시간, 토큰 수)은 `AiUsageLog` 테이블에 저장되고 프롬프트 원문은 저장하지 않습니다.
+
+### Google Calendar 설정 (선택)
+
+Google 기본 캘린더의 일정을 앱으로 **읽기 전용 단방향** 동기화합니다 (권한: `calendar.readonly`). 앱에서 Google 일정을 바꾸거나 지우지 않습니다.
+API 키나 JSON 파일 다운로드는 필요 없고, OAuth 클라이언트 ID와 비밀번호만 있으면 됩니다.
+
+1. https://console.cloud.google.com 에서 프로젝트를 만들고 **Google Calendar API**를 사용 설정합니다.
+2. **OAuth 동의 화면**: 사용자 유형 **외부**, 테스트 사용자에 본인 Gmail 주소를 추가합니다.
+3. **사용자 인증 정보 → OAuth 클라이언트 ID**: 유형 **웹 애플리케이션**, 승인된 리디렉션 URI에 `http://localhost:3000/api/google/callback`을 그대로 등록합니다.
+4. 발급된 값을 `apps/api/.env`의 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`에 넣고 API 서버를 재시작합니다.
+   포트나 주소를 바꿨다면 `GOOGLE_REDIRECT_URI`도 콘솔에 등록한 값과 똑같이 맞춥니다.
+5. 웹의 **설정 → Google 계정 연결**로 로그인한 뒤 **지금 동기화**를 누릅니다.
+
+- 동기화 범위는 지난 30일 ~ 앞으로 180일입니다. 가져온 일정은 캘린더에 Google 표시로 나타나며 수정·삭제할 수 없습니다.
+- 토큰은 `JWT_SECRET`으로 암호화해 DB에 저장합니다. `JWT_SECRET`을 바꾸면 다시 연결해야 합니다.
+- 동의 화면이 **테스트** 상태이면 Google 정책상 약 7일 뒤 토큰이 만료됩니다. 그때는 다시 연결하세요.
+- **연결 해제**는 Google에 권한 철회를 요청하고 저장된 토큰을 지웁니다. 가져온 일정은 체크박스를 선택했을 때만 함께 삭제합니다.
+
+### GitHub 토큰 (선택)
+
+공개 저장소는 토큰 없이 조회됩니다. 비공개 저장소의 커밋·이슈·PR을 보려면 GitHub **Settings → Developer settings →
+Fine-grained tokens**에서 해당 저장소만 선택하고 권한을 **Contents·Issues·Pull requests: Read-only**로 만든 토큰을
+`GITHUB_TOKEN`에 넣고 API 서버를 재시작합니다. 앱은 GitHub에 쓰지 않습니다.
 
 ### Notion 설정 (선택)
 
@@ -164,7 +213,7 @@ npm run build
 
 API 테스트는 `.env`의 DB 이름 뒤에 `_test`를 붙인 별도 MySQL DB(`devmate_test`)를 매번 새로 만듭니다.
 이름이 `_test`로 끝나는 DB만 초기화하며 개발 DB는 건드리지 않습니다. 다른 DB를 쓰려면 `TEST_DATABASE_URL`을 지정합니다.
-2026-11-07 기준 (MySQL 8.4) 타입 검사, 빌드, API 38개 및 프론트 7개 테스트가 통과했습니다.
+2026-11-08 기준 (MySQL 8.4) 타입 검사, 빌드, API 68개 및 프론트 7개 테스트가 통과했습니다.
 브라우저 화면에 대한 자동 테스트는 아직 없습니다.
 
 전체 계획과 남은 작업은 [개발 로드맵](docs/ROADMAP.md)을 참고하세요.
