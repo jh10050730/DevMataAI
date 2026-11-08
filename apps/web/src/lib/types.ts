@@ -17,6 +17,7 @@ export interface Task {
   dueDate: string | null;
   completed: boolean;
   completedAt: string | null;
+  isDemo?: boolean;
   createdAt: string;
 }
 
@@ -31,6 +32,7 @@ export interface CalendarEvent {
   color: string | null;
   category: Category;
   source: string;
+  isDemo?: boolean;
 }
 
 export interface TaskStats {

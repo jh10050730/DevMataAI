@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router';
 import EventModal from '../components/EventModal';
 import TaskItem from '../components/TaskItem';
 import TaskModal from '../components/TaskModal';
-import { Button, Card, EmptyState, ErrorState, Input, ProgressBar, Select, Skeleton, cn } from '../components/ui';
+import { Button, Card, DemoBadge, EmptyState, ErrorState, Input, ProgressBar, Select, Skeleton, cn } from '../components/ui';
 import { api, errorMessage } from '../lib/api';
 import { addDays, addMonths, fmtDate, fmtTime, isSameDay, monthGrid, overlapsDay, startOfDay, weekDays } from '../lib/date';
 import { CATEGORIES, CATEGORY_COLOR, CATEGORY_LABEL, type CalendarEvent, type Category, type Task, type TaskStats } from '../lib/types';
@@ -170,7 +170,10 @@ export default function CalendarTasksPage() {
                         )}
                       </span>
                     </span>
-                    <span className="text-[11px] text-muted">{e.source === 'GOOGLE' ? 'Google' : CATEGORY_LABEL[e.category]}</span>
+                    <span className="flex items-center gap-1 text-[11px] text-muted">
+                      {e.isDemo && <DemoBadge />}
+                      {e.source === 'GOOGLE' ? 'Google' : CATEGORY_LABEL[e.category]}
+                    </span>
                   </button>
                 </li>
               ))}

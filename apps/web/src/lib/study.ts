@@ -20,6 +20,7 @@ export interface StudyNote {
   reviewDue: boolean;
   notionPageId: string | null;
   notionSavedAt: string | null;
+  isDemo?: boolean;
   updatedAt: string;
 }
 

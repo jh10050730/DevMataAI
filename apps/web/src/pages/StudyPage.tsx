@@ -2,7 +2,7 @@ import { BookOpen, Clock, Download, FileText, Plus, Search, Tag, Trash2, X } fro
 import { useEffect, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router';
 import StudyNoteView, { NoteEditor } from '../components/StudyNoteView';
-import { Badge, Button, Card, EmptyState, ErrorState, Field, Input, Modal, ProgressBar, Select, Skeleton, Spinner, cn } from '../components/ui';
+import { Badge, Button, Card, DemoBadge, EmptyState, ErrorState, Field, Input, Modal, ProgressBar, Select, Skeleton, Spinner, cn } from '../components/ui';
 import { errorMessage } from '../lib/api';
 import { fmtDate } from '../lib/date';
 import { getIntegrationStatus, studyApi, type StudyNote } from '../lib/study';
@@ -142,6 +142,7 @@ export default function StudyPage() {
                         {n.subject?.name ?? '미분류'} · {fmtDate(n.updatedAt)}
                       </span>
                     </span>
+                    {n.isDemo && <DemoBadge />}
                     {n.reviewDue && <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400">복습</Badge>}
                   </div>
                   <ProgressBar value={n.progress} className="mt-2 h-1" />

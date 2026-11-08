@@ -374,4 +374,25 @@ describe('DevMate API (e2e)', () => {
       expect(res.body.todayEvents).toHaveLength(1);
     });
   });
+
+  describe('Demo', () => {
+    it('데모 데이터 추가 → isDemo 표시 → 중복 추가 409 → 삭제 시 실제 데이터는 유지', async () => {
+      const before = await api().get('/api/tasks').set(auth(tokenA)).expect(200);
+      const realTasks = before.body.length;
+      expect((await api().get('/api/demo').set(auth(tokenA)).expect(200)).body.total).toBe(0);
+
+      const created = await api().post('/api/demo').set(auth(tokenA)).expect(201);
+      expect(created.body).toMatchObject({ tasks: 5, events: 4, notes: 3, total: 12 });
+      const tasks = await api().get('/api/tasks').set(auth(tokenA)).expect(200);
+      expect(tasks.body.filter((t: { isDemo: boolean }) => t.isDemo)).toHaveLength(5);
+      await api().post('/api/demo').set(auth(tokenA)).expect(409);
+
+      // 다른 사용자에게는 보이지 않고, 그 사용자의 삭제가 A의 데모를 지우지 않는다
+      expect((await api().get('/api/demo').set(auth(tokenB)).expect(200)).body.total).toBe(0);
+      expect((await api().delete('/api/demo').set(auth(tokenB)).expect(200)).body.total).toBe(0);
+
+      expect((await api().delete('/api/demo').set(auth(tokenA)).expect(200)).body).toMatchObject({ tasks: 5, events: 4, notes: 3, total: 12 });
+      expect((await api().get('/api/tasks').set(auth(tokenA)).expect(200)).body).toHaveLength(realTasks);
+    });
+  });
 });

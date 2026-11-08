@@ -2,7 +2,7 @@ import { Check, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { dueLabel } from '../lib/date';
 import { CATEGORY_COLOR, CATEGORY_LABEL, PRIORITY_LABEL, PRIORITY_STYLE, type Task } from '../lib/types';
-import { Badge, cn } from './ui';
+import { Badge, DemoBadge, cn } from './ui';
 
 const DUE_TONE = {
   overdue: 'text-red-500',
@@ -40,6 +40,7 @@ export default function TaskItem({
       <div className="min-w-0 flex-1">
         <p className={cn('truncate text-sm', task.completed && 'text-muted line-through')}>{task.title}</p>
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          {task.isDemo && <DemoBadge />}
           <Badge className={PRIORITY_STYLE[task.priority]}>{PRIORITY_LABEL[task.priority]}</Badge>
           <span className="flex items-center gap-1 text-[11px] text-muted">
             <span className="size-1.5 rounded-full" style={{ background: CATEGORY_COLOR[task.category] }} />

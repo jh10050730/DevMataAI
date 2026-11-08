@@ -87,6 +87,11 @@ export const Badge = ({ children, className }: { children: ReactNode; className?
   <span className={cn('inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium', className)}>{children}</span>
 );
 
+/** 데모(샘플) 데이터 표시. 설정 → 데모 데이터에서 한 번에 지울 수 있다. */
+export const DemoBadge = () => (
+  <Badge className="bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-400">DEMO</Badge>
+);
+
 export function ProgressBar({ value, className }: { value: number; className?: string }) {
   return (
     <div className={cn('h-2 overflow-hidden rounded-full bg-surface-2', className)} role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={100}>
