@@ -75,7 +75,7 @@ export default function StudyPage() {
                 <button
                   key={t}
                   onClick={() => setTag(tag === t ? '' : t)}
-                  className={cn('rounded-md px-2 py-0.5 text-xs', tag === t ? 'bg-blue-600 text-white' : 'bg-surface-2 text-muted hover:text-fg')}
+                  className={cn('rounded-md px-2 py-0.5 text-xs', tag === t ? 'bg-accent-strong text-white' : 'bg-surface-2 text-muted hover:text-fg')}
                 >
                   #{t}
                 </button>
@@ -101,11 +101,11 @@ export default function StudyPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <label className="flex items-center gap-1.5 text-muted">
-            <input type="checkbox" checked={dueOnly} onChange={(e) => setDueOnly(e.target.checked)} className="accent-blue-600" />
+            <input type="checkbox" checked={dueOnly} onChange={(e) => setDueOnly(e.target.checked)} className="accent-accent" />
             복습 필요만
           </label>
           {tag && (
-            <button onClick={() => setTag('')} className="flex items-center gap-1 rounded-md bg-blue-500/10 px-2 py-0.5 text-blue-500">
+            <button onClick={() => setTag('')} className="flex items-center gap-1 rounded-md bg-accent/10 px-2 py-0.5 text-accent">
               #{tag} <X className="size-3" />
             </button>
           )}
@@ -131,7 +131,7 @@ export default function StudyPage() {
                   onClick={() => select(n.id)}
                   className={cn(
                     'w-full rounded-xl border bg-surface p-3 text-left transition-colors',
-                    n.id === selectedId ? 'border-blue-500 ring-1 ring-blue-500/30' : 'border-border hover:border-blue-500/40',
+                    n.id === selectedId ? 'border-accent ring-1 ring-accent/30' : 'border-border hover:border-accent/40',
                   )}
                 >
                   <div className="flex items-start gap-2">
@@ -291,7 +291,7 @@ function SubjectsPanel({
           <li>
             <button
               onClick={() => onFilter(undefined)}
-              className={cn('w-full rounded-lg px-2 py-1.5 text-left text-sm', subjectFilter === undefined ? 'bg-blue-500/10 font-medium text-blue-600 dark:text-blue-400' : 'text-muted hover:bg-surface-2')}
+              className={cn('w-full rounded-lg px-2 py-1.5 text-left text-sm', subjectFilter === undefined ? 'bg-accent/10 font-medium text-accent dark:text-accent' : 'text-muted hover:bg-surface-2')}
             >
               전체 노트
             </button>
@@ -302,7 +302,7 @@ function SubjectsPanel({
               <li key={s.id ?? 'none'} className="group relative">
                 <button
                   onClick={() => onFilter(s.id)}
-                  className={cn('w-full rounded-lg px-2 py-1.5 text-left', subjectFilter === s.id ? 'bg-blue-500/10' : 'hover:bg-surface-2')}
+                  className={cn('w-full rounded-lg px-2 py-1.5 text-left', subjectFilter === s.id ? 'bg-accent/10' : 'hover:bg-surface-2')}
                 >
                   <span className="flex items-center gap-2 text-sm">
                     <span className="size-2 rounded-full" style={{ background: s.color }} />

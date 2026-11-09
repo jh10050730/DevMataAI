@@ -2,15 +2,16 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 
 type Theme = 'dark' | 'light';
 const KEY = 'devmate-theme';
-const ThemeContext = createContext<{ theme: Theme; toggle: () => void }>({ theme: 'dark', toggle: () => {} });
+const APPEARANCE_VERSION = 'clean-blue-v1';
+const ThemeContext = createContext<{ theme: Theme; toggle: () => void }>({ theme: 'light', toggle: () => {} });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // 다크 모드 기본
+  // Start the new visual design in light mode once, then preserve subsequent choices.
   const [theme, setTheme] = useState<Theme>(() => {
     try {
-      return localStorage.getItem(KEY) === 'light' ? 'light' : 'dark';
+      return localStorage.getItem('devmate-appearance-version') === APPEARANCE_VERSION && localStorage.getItem(KEY) === 'dark' ? 'dark' : 'light';
     } catch {
-      return 'dark';
+      return 'light';
     }
   });
 
@@ -18,6 +19,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle('dark', theme === 'dark');
     try {
       localStorage.setItem(KEY, theme);
+      localStorage.setItem('devmate-appearance-version', APPEARANCE_VERSION);
     } catch {
       /* noop */
     }

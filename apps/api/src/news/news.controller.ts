@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 import { NewsService } from './news.service';
 class NewsQuery {
@@ -13,4 +13,5 @@ export class NewsController {
   @Get('schedule') schedule() { return this.news.schedule(); }
   @Get('briefing') briefing(@Query() query: NewsQuery) { return this.news.briefing(query.category); }
   @Post('briefing/analyze') analyze(@Query() query: NewsQuery) { return this.news.analyze(query.category); }
+  @Post(':id/summary') articleSummary(@Param('id') id: string) { return this.news.articleSummary(id); }
 }

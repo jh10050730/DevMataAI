@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="ko" class="dark">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DevMate AI</title>
     <script>
-      try { if (localStorage.getItem('devmate-theme') === 'light') document.documentElement.classList.remove('dark'); } catch {}
+      try { document.documentElement.classList.toggle('dark', localStorage.getItem('devmate-appearance-version') === 'clean-blue-v1' && localStorage.getItem('devmate-theme') === 'dark'); } catch {}
     </script>
   </head>
   <body>

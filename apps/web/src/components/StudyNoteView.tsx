@@ -9,7 +9,7 @@ import { Badge, Button, Card, Field, Input, Modal, ProgressBar, Select, Textarea
 const RATING_STYLE: Record<Rating, string> = {
   again: 'hover:border-red-500/60 hover:text-red-500',
   hard: 'hover:border-amber-500/60 hover:text-amber-500',
-  good: 'hover:border-blue-500/60 hover:text-blue-500',
+  good: 'hover:border-accent/60 hover:text-accent',
   easy: 'hover:border-emerald-500/60 hover:text-emerald-500',
 };
 
@@ -74,7 +74,7 @@ export function NoteEditor({
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted">내용 (Markdown)</span>
-            <button type="button" onClick={() => setPreview((p) => !p)} className="flex items-center gap-1 text-xs text-blue-500">
+            <button type="button" onClick={() => setPreview((p) => !p)} className="flex items-center gap-1 text-xs text-accent">
               {preview ? <Pencil className="size-3" /> : <Eye className="size-3" />}
               {preview ? '편집' : '미리보기'}
             </button>
@@ -230,7 +230,7 @@ export default function StudyNoteView({
                 {note.subject?.name ?? '미분류'}
               </Badge>
               {note.tags.map((t) => (
-                <Badge key={t} className="bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                <Badge key={t} className="bg-accent/10 text-accent dark:text-accent">
                   #{t}
                 </Badge>
               ))}
@@ -294,7 +294,7 @@ export default function StudyNoteView({
             <span className="text-muted">학습 진도</span>
             <span className="font-medium">{progress}%</span>
           </div>
-          <input type="range" min={0} max={100} step={10} value={progress} onChange={(e) => setProgress(Number(e.target.value))} className="w-full accent-blue-600" aria-label="학습 진도" />
+          <input type="range" min={0} max={100} step={10} value={progress} onChange={(e) => setProgress(Number(e.target.value))} className="w-full accent-accent" aria-label="학습 진도" />
           <ProgressBar value={progress} />
         </div>
         <p className="mb-2 text-xs text-muted">오늘 학습했다면 얼마나 잘 기억났는지 선택하세요. 다음 복습일이 자동으로 정해져요.</p>
@@ -343,7 +343,7 @@ export default function StudyNoteView({
         {aiResult && !aiLoading && (
           <div className="mt-4 rounded-xl border border-border p-4">
             <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px]">
-              <Badge className={aiResult.demo ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' : 'bg-violet-500/15 text-violet-600 dark:text-violet-400'}>
+              <Badge className={aiResult.demo ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' : 'bg-accent/15 text-accent dark:text-accent'}>
                 <Bot className="mr-1 size-3" />
                 {aiResult.demo ? '데모 응답' : `Claude (로컬)${aiResult.model ? ` · ${aiResult.model}` : ''}`}
               </Badge>

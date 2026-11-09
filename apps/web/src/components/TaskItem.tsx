@@ -31,7 +31,7 @@ export default function TaskItem({
         onClick={() => onToggle(task)}
         className={cn(
           'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md border transition-colors',
-          task.completed ? 'border-blue-600 bg-blue-600 text-white' : 'border-border hover:border-blue-500',
+          task.completed ? 'border-accent-strong bg-accent-strong text-white' : 'border-border hover:border-accent',
         )}
         aria-label={task.completed ? '완료 취소' : '완료로 표시'}
       >

@@ -6,6 +6,7 @@
     "assistant:smoke": "node test/assistant-smoke.cjs",
     "projects:smoke": "node test/projects-smoke.cjs",
     "news:smoke": "node test/news-smoke.cjs",
+    "news:original-smoke": "node test/news-original-smoke.cjs",
     "build": "nest build",
     "start": "node dist/main",
     "start:dev": "nest start --watch",
@@ -19,6 +20,7 @@
     "progress:smoke": "node test/progress-smoke.cjs"
   },
   "dependencies": {
+    "@mozilla/readability": "^0.6.0",
     "@nestjs/common": "^11.1.0",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.1.0",
@@ -28,6 +30,8 @@
     "bcryptjs": "^3.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "ipaddr.js": "^1.9.1",
+    "linkedom": "0.18.12",
     "reflect-metadata": "^0.2.2",
     "rss-parser": "^3.13.0",
     "rxjs": "^7.8.2"

@@ -57,10 +57,10 @@ export default function ProjectFilesCard({ project, onAnalyzed }: { project: Fil
       {msg && <p className={`mt-2 text-sm ${msg.ok ? 'text-emerald-500' : 'text-red-500'}`}>{msg.text}</p>}
 
       {project.aiProgress !== null && detail && (
-        <div className="mt-4 rounded-xl border border-violet-500/30 bg-violet-500/5 p-4">
+        <div className="mt-4 rounded-xl border border-accent/30 bg-accent/5 p-4">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-2xl font-semibold">{project.aiProgress}%</span>
-            <Badge className="bg-violet-500/15 text-violet-600 dark:text-violet-400">AI 추정</Badge>
+            <Badge className="bg-accent/15 text-accent dark:text-accent">AI 추정</Badge>
             <Badge className="bg-surface-2">신뢰도 {CONFIDENCE[detail.confidence] ?? detail.confidence}</Badge>
             {project.aiProgressAt && <span className="text-xs text-muted">{new Date(project.aiProgressAt).toLocaleString('ko-KR')} 분석</span>}
           </div>

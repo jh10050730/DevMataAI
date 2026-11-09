@@ -79,7 +79,7 @@ function inline(text: string): ReactNode[] {
     const link = part.match(/^\[([^\]]+)\]\(([^)\s]+)\)$/);
     if (link) {
       return /^https?:\/\//i.test(link[2]) ? (
-        <a key={i} href={link[2]} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">
+        <a key={i} href={link[2]} target="_blank" rel="noopener noreferrer" className="text-accent underline">
           {link[1]}
         </a>
       ) : (
@@ -115,7 +115,7 @@ export default function Markdown({ source, className }: { source: string; classN
             );
           case 'quote':
             return (
-              <blockquote key={i} className="whitespace-pre-wrap border-l-2 border-blue-500/50 pl-3 text-muted">
+              <blockquote key={i} className="whitespace-pre-wrap border-l-2 border-accent/50 pl-3 text-muted">
                 {inline(b.text)}
               </blockquote>
             );
@@ -133,7 +133,7 @@ export default function Markdown({ source, className }: { source: string; classN
               <Tag key={i} className={cn('space-y-1 pl-5', b.ordered ? 'list-decimal' : 'list-disc')}>
                 {b.items.map((it, j) => (
                   <li key={j} className={cn(it.checked !== undefined && 'list-none -ml-5')}>
-                    {it.checked !== undefined && <input type="checkbox" checked={it.checked} readOnly className="mr-2 accent-blue-600" />}
+                    {it.checked !== undefined && <input type="checkbox" checked={it.checked} readOnly className="mr-2 accent-accent" />}
                     {inline(it.text)}
                   </li>
                 ))}

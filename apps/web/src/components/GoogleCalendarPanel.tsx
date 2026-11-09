@@ -105,7 +105,7 @@ export default function GoogleCalendarPanel({ onChange }: { onChange?: () => voi
       <Modal open={confirmOff} onClose={() => setConfirmOff(false)} title="Google Calendar 연결을 해제할까요?">
         <p className="text-sm text-muted">저장된 토큰을 지우고 Google 계정에서 DevMate 의 접근 권한을 철회해요. Google Calendar 의 원래 일정은 그대로예요.</p>
         <label className="mt-4 flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={removeEvents} onChange={(e) => setRemoveEvents(e.target.checked)} className="size-4 accent-blue-600" />
+          <input type="checkbox" checked={removeEvents} onChange={(e) => setRemoveEvents(e.target.checked)} className="size-4 accent-accent" />
           DevMate 로 가져온 일정 {status.syncedEvents}개도 삭제
         </label>
         <div className="mt-5 flex justify-end gap-2">

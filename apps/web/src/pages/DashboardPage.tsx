@@ -1,4 +1,4 @@
-import { AlertCircle, CalendarDays, CheckCircle2, Clock, FolderGit2, ListTodo, Newspaper, Sparkles, TrendingUp, type LucideIcon } from 'lucide-react';
+import { AlertCircle, ArrowUpRight, CalendarDays, CheckCircle2, Clock, FolderGit2, ListTodo, Newspaper, Sparkles, TrendingUp, type LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import DueReviewCard from '../components/DueReviewCard';
@@ -12,12 +12,9 @@ import { useAsync } from '../lib/useAsync';
 
 function Stat({ icon: Icon, label, value, tone }: { icon: LucideIcon; label: string; value: string | number; tone: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
-      <div className="flex items-center gap-2 text-xs text-muted">
-        <Icon className={cn('size-4', tone)} />
-        {label}
-      </div>
-      <p className="mt-2 text-2xl font-semibold tabular-nums">{value}</p>
+    <div className="workspace-card flex items-center justify-between gap-3 rounded-[24px] bg-surface p-5 sm:p-6">
+      <div><p className="text-sm font-medium text-muted">{label}</p><p className="mt-3 text-[30px] font-bold leading-none tracking-tight tabular-nums">{value}</p></div>
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-2"><Icon className={cn('size-5', tone)} strokeWidth={2} /></span>
     </div>
   );
 }
@@ -34,12 +31,12 @@ function EventRow({ e }: { e: CalendarEvent }) {
   );
 }
 
-/** 이후 Phase 에서 채워질 영역 */
 function Shortcut({ icon: Icon, title, text, to }: { icon: LucideIcon; title: string; text: string; to: string }) {
   return (
-    <Card title={title} icon={Icon} action={<Link to={to} className="text-xs text-blue-500 hover:underline">열기 →</Link>}>
-      <p className="text-sm text-muted">{text}</p>
-    </Card>
+    <Link to={to} className="workspace-card group flex min-w-0 flex-col rounded-[24px] bg-surface p-7 transition-colors hover:bg-accent-soft/50">
+      <div className="mb-5 flex items-center justify-between"><span className="flex size-10 items-center justify-center rounded-2xl bg-accent-soft"><Icon className="size-5 text-accent" strokeWidth={1.6} /></span><ArrowUpRight className="size-4 text-muted transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></div>
+      <h3 className="text-lg font-bold">{title}</h3><p className="mt-2 text-sm leading-6 text-muted">{text}</p>
+    </Link>
   );
 }
 
@@ -68,32 +65,33 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-border bg-gradient-to-br from-blue-600/15 via-surface to-violet-600/15 p-6">
-        <p className="text-sm text-muted">{fmtFullDate(today)}</p>
-        <h2 className="mt-1 text-xl font-semibold sm:text-2xl">
-          {greeting}, {user?.name}님 👋
-        </h2>
-        {data && (
-          <p className="mt-2 text-sm text-muted">
-            오늘 일정 {data.todayEvents.length}개, 오늘 마감 {data.tasks.dueToday.length}개
-            {data.tasks.overdue.length > 0 && <span className="text-red-500">, 지난 마감 {data.tasks.overdue.length}개</span>}가 있어요.
-          </p>
-        )}
-      </div>
+      <header className="pb-2 pt-1">
+        <p className="mb-2 text-sm font-medium text-muted">{fmtFullDate(today)}</p>
+        <h2 className="text-[28px] font-bold leading-snug tracking-tight sm:text-[32px]">{user?.name}님, {greeting}</h2>
+        <p className="mt-2 text-[15px] text-muted">오늘의 일정과 할 일을 한눈에 확인해보세요.</p>
+      </header>
+      <section className="workspace-card flex flex-wrap items-center gap-4 rounded-[24px] bg-surface p-5 sm:gap-5 sm:p-7">
+        <span className="flex size-14 shrink-0 items-center justify-center rounded-[20px] bg-accent-soft"><Sparkles className="size-7 text-accent" strokeWidth={2} /></span>
+        <div className="min-w-0 flex-1 basis-48">
+          <h3 className="text-lg font-bold sm:text-xl">오늘은 무엇부터 할까요?</h3>
+          <p className="mt-1.5 text-sm leading-6 text-muted">{data ? <>일정 {data.todayEvents.length}개 · 오늘 마감 {data.tasks.dueToday.length}개{data.tasks.overdue.length > 0 && <span className="ml-2 text-red-500">지난 마감 {data.tasks.overdue.length}개</span>}</> : 'AI 비서와 함께 오늘의 우선순위를 정해보세요.'}</p>
+        </div>
+        <Link to="/assistant" className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-accent-strong px-5 py-3 text-sm font-semibold text-white hover:brightness-95 sm:w-auto">브리핑 보기<ArrowUpRight className="size-4" /></Link>
+      </section>
 
       {error ? (
         <ErrorState message={error} onRetry={reload} />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Stat icon={CalendarDays} label="오늘 일정" value={data?.todayEvents.length ?? '–'} tone="text-blue-500" />
+            <Stat icon={CalendarDays} label="오늘 일정" value={data?.todayEvents.length ?? '–'} tone="text-accent" />
             <Stat icon={Clock} label="오늘 마감" value={data?.tasks.dueToday.length ?? '–'} tone="text-amber-500" />
             <Stat icon={AlertCircle} label="지난 마감" value={data?.tasks.overdue.length ?? '–'} tone="text-red-500" />
             <Stat icon={CheckCircle2} label="전체 진행률" value={data ? `${data.stats.rate}%` : '–'} tone="text-emerald-500" />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            <Card title="오늘의 일정" icon={CalendarDays} action={<Link to="/calendar" className="text-xs text-blue-500 hover:underline">캘린더</Link>}>
+            <Card title="오늘의 일정" icon={CalendarDays} action={<Link to="/calendar" className="text-xs text-accent hover:underline">캘린더</Link>}>
               {loading && !data ? (
                 <Skeleton lines={3} />
               ) : !data?.todayEvents.length ? (
@@ -107,7 +105,7 @@ export default function DashboardPage() {
               )}
             </Card>
 
-            <Card title="해야 할 일" icon={ListTodo} className="lg:col-span-2" action={<Link to="/calendar" className="text-xs text-blue-500 hover:underline">전체 보기</Link>}>
+            <Card title="해야 할 일" icon={ListTodo} className="lg:col-span-2" action={<Link to="/calendar" className="text-xs text-accent hover:underline">전체 보기</Link>}>
               {actionError && <p className="mb-2 text-xs text-red-500">{actionError}</p>}
               {loading && !data ? (
                 <Skeleton lines={4} />

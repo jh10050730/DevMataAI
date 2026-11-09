@@ -54,7 +54,7 @@ export default function IntegrationsCard() {
   };
 
   return (
-    <Card title="외부 연동" icon={Plug} action={<button onClick={reload} className="text-xs text-blue-500 hover:underline">새로고침</button>}>
+    <Card title="외부 연동" icon={Plug} action={<button onClick={reload} className="text-xs text-accent hover:underline">새로고침</button>}>
       {error ? (
         <ErrorState message={error} onRetry={reload} />
       ) : loading && !data ? (

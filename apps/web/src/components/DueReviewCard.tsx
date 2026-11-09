@@ -11,7 +11,7 @@ export default function DueReviewCard() {
   const list = (data ?? []).slice(0, 5);
 
   return (
-    <Card title="복습할 학습 내용" icon={BookOpen} action={<Link to="/study" className="text-xs text-blue-500 hover:underline">학습</Link>}>
+    <Card title="복습할 학습 내용" icon={BookOpen} action={<Link to="/study" className="text-xs text-accent hover:underline">학습</Link>}>
       {error ? (
         <ErrorState message={error} onRetry={reload} />
       ) : loading && !data ? (
@@ -22,7 +22,7 @@ export default function DueReviewCard() {
         <ul className="divide-y divide-border">
           {list.map((n) => (
             <li key={n.id}>
-              <Link to={`/study?note=${n.id}`} className="flex items-center gap-2 py-2 text-sm hover:text-blue-500">
+              <Link to={`/study?note=${n.id}`} className="flex items-center gap-2 py-2 text-sm hover:text-accent">
                 <span className="size-2 shrink-0 rounded-full" style={{ background: n.subject?.color ?? '#64748b' }} />
                 <span className="flex-1 truncate">{n.title}</span>
                 <span className="shrink-0 text-[11px] text-muted">{n.lastStudiedAt ? `마지막 ${fmtDate(n.lastStudiedAt)}` : '처음 학습'}</span>

@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { ExternalLink, Newspaper, RefreshCw } from 'lucide-react';
 import { Badge, Button, Card, EmptyState, ErrorState, Input, Select, Spinner } from '../components/ui';
 import { api, errorMessage } from '../lib/api';
+import { newsCategories as categories, type NewsSource } from '../lib/news';
+import ArticleExcerpt from '../components/ArticleExcerpt';
 
-type Article = { id: string; title: string; url: string; source: string; category: string; excerpt: string; publishedAt: string | null };
-type Briefing = { date: string; notice: string; articles: Article[]; lines: string[] };
-type Analysis = { available: boolean; message?: string; notice?: string; summary?: string[]; articles?: { id: string; importance: string; impact: string }[] };
-const categories: Record<string, string> = { IT: 'IT 전체', AI: 'AI', SECURITY: '보안', DEV: '개발', TECH: '기술', ECONOMY: '경제', FINANCE: '금융·증권', REAL_ESTATE: '부동산', WORLD: '국제', POLITICS: '정치', SOCIETY: '사회' };
+type Article = NewsSource & { category: string; publishedAt: string | null };
+type Briefing = { date: string; notice: string; articles: Article[]; lines: string[]; analysis?: Analysis | null };
+type Analysis = { available: boolean; message?: string; notice?: string; summary?: string[]; sourceArticles?: NewsSource[]; articles?: { id: string; importance: string; impact: string }[] };
 export default function NewsPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [total, setTotal] = useState(0);
@@ -33,7 +34,7 @@ export default function NewsPage() {
       setLoading(true); setError('');
       const query = new URLSearchParams({ q, ...(category ? { category } : {}) });
       Promise.all([api.get<{ articles: Article[]; total: number }>(`/news?${query}`), api.get<Briefing>(`/news/briefing${category ? '?category=' + category : ''}`), api.get<NonNullable<typeof schedule>>('/news/schedule')])
-        .then(([list, brief, auto]) => { if (active) { setArticles(list.articles); setTotal(list.total); setBriefing(brief); setSchedule(auto); } })
+        .then(([list, brief, auto]) => { if (active) { setArticles(list.articles); setTotal(list.total); setBriefing(brief); setAnalysis(brief.analysis ?? undefined); setSchedule(auto); } })
         .catch(e => { if (active) setError(errorMessage(e)); })
         .finally(() => { if (active) setLoading(false); });
     }, 250);
@@ -60,16 +61,16 @@ export default function NewsPage() {
     {briefing && <Card title={`${category ? categories[category] : '전체'} 오늘의 브리핑 · ${briefing.date} (한국 시간)`} icon={Newspaper}>
       <p className="mb-3 text-xs text-muted">{briefing.notice}</p>
       <Button variant="secondary" className="mb-4" loading={analyzing} disabled={refreshing || !briefing.articles.length} onClick={analyze}>AI 브리핑 생성</Button>
-      {analysis && <div className="mb-4 rounded-xl bg-surface-2 p-4 text-sm"><p className="mb-2 text-xs text-muted">{analysis.notice || analysis.message}</p>{analysis.summary?.map((line, i) => <p key={i} className="mb-2">{line}</p>)}{analysis.articles?.map(row => { const article = briefing.articles.find(a => a.id === row.id); return article && <div key={row.id} className="mt-4"><a className="font-medium text-blue-500" href={article.url} target="_blank" rel="noopener noreferrer">{article.title} ↗</a><p className="mt-1">중요성(추정): {row.importance}</p><p className="mt-1">예상 영향(추정): {row.impact}</p></div>; })}</div>}
-      {briefing.articles.length ? <ol className="space-y-3">{briefing.articles.map((a, i) => <li key={a.id} className="text-sm"><a href={a.url} target="_blank" rel="noopener noreferrer" className="hover:text-blue-500">{i + 1}. {briefing.lines[i]} <ExternalLink className="inline size-3" /></a></li>)}</ol> : <p className="text-sm text-muted">오늘 발행된 기사가 없습니다. 뉴스를 수집해 주세요.</p>}
+      {analysis && <div className="mb-4 rounded-xl bg-surface-2 p-4 text-sm"><p className="mb-2 text-xs text-muted">{analysis.notice || analysis.message}</p>{analysis.summary?.map((line, i) => <p key={i} className="mb-2">{line}</p>)}{analysis.articles?.map(row => { const article = briefing.articles.find(a => a.id === row.id); return article && <div key={row.id} className="mt-4"><a className="font-medium text-accent" href={article.url} target="_blank" rel="noopener noreferrer">{article.title} ↗</a><p className="mt-1">중요성(추정): {row.importance}</p><p className="mt-1">예상 영향(추정): {row.impact}</p></div>; })}</div>}
+      {briefing.articles.length ? <ol className="space-y-3">{briefing.articles.map((a, i) => <li key={a.id} className="text-sm"><a href={a.url} target="_blank" rel="noopener noreferrer" className="hover:text-accent">{i + 1}. {briefing.lines[i]} <ExternalLink className="inline size-3" /></a></li>)}</ol> : <p className="text-sm text-muted">오늘 발행된 기사가 없습니다. 뉴스를 수집해 주세요.</p>}
     </Card>}
     <div className="flex flex-col gap-3 sm:flex-row"><Input aria-label="뉴스 검색" placeholder="제목이나 내용 검색…" value={q} onChange={e => setQ(e.target.value)} maxLength={200} /><Select disabled={analyzing} aria-label="뉴스 카테고리" className="sm:max-w-40" value={category} onChange={e => { setCategory(e.target.value); setAnalysis(undefined); }}><option value="">전체 카테고리</option>{Object.entries(categories).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</Select></div>
     {loading ? <Spinner /> : <><p className="text-xs text-muted">검색 결과 {total}개 · 최신 100개 표시 · 분야별 RSS 기준 분류, IT 세부 분야는 키워드 기준</p>
       {!articles.length ? <EmptyState icon={Newspaper} title="표시할 뉴스가 없습니다" description="뉴스를 수집하거나 검색 조건을 변경해 주세요." /> : <div className="grid gap-4 md:grid-cols-2">{articles.map(a => <Card key={a.id}>
-        <div className="mb-3 flex items-center justify-between gap-2"><span className="text-xs text-muted">{a.source}</span><Badge className="bg-blue-500/10 text-blue-500">{categories[a.category]}</Badge></div>
-        <a href={a.url} target="_blank" rel="noopener noreferrer" className="font-semibold leading-relaxed hover:text-blue-500">{a.title} <ExternalLink className="inline size-3.5" /></a>
-        <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-muted">{a.excerpt || '피드에 본문 발췌가 없습니다. 원문을 확인하세요.'}</p>
-        <p className="mt-4 text-xs text-muted">{a.publishedAt ? new Date(a.publishedAt).toLocaleString('ko-KR') : '발행일 미상'} · RSS 발췌</p>
+        <div className="mb-3 flex items-center justify-between gap-2"><span className="text-xs text-muted">{a.source}</span><Badge className="bg-accent/10 text-accent">{categories[a.category]}</Badge></div>
+        <a href={a.url} target="_blank" rel="noopener noreferrer" className="font-semibold leading-relaxed hover:text-accent">{a.title} <ExternalLink className="inline size-3.5" /></a>
+        <ArticleExcerpt article={analysis?.sourceArticles?.find(source => source.id === a.id) ?? a} />
+        <p className="mt-4 text-xs text-muted">{a.publishedAt ? new Date(a.publishedAt).toLocaleString('ko-KR') : '발행일 미상'}</p>
       </Card>)}</div>}</>}
   </div>;
 }

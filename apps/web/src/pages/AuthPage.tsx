@@ -1,4 +1,4 @@
-import { Sparkles } from 'lucide-react';
+import { Layers3 } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { Button, Field, Input } from '../components/ui';
@@ -30,14 +30,14 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   };
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-gradient-to-br from-blue-600/10 via-bg to-violet-600/10 p-4">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-7 shadow-xl shadow-black/10">
+    <div className="flex min-h-full items-center justify-center bg-bg p-5">
+      <div className="workspace-card w-full max-w-sm rounded-[28px] bg-surface p-8">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <div className="rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 p-2.5">
-            <Sparkles className="size-5 text-white" />
+          <div className="rounded-2xl bg-accent-strong p-3.5">
+            <Layers3 className="size-6 text-white" strokeWidth={2} />
           </div>
           <div>
-            <h1 className="text-xl font-semibold">DevMate AI</h1>
+            <h1 className="text-2xl font-bold tracking-tight">devmate</h1>
             <p className="mt-1 text-sm text-muted">{isLogin ? '다시 오신 걸 환영해요' : '나만의 AI 워크스페이스 만들기'}</p>
           </div>
         </div>
@@ -69,7 +69,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
         <p className="mt-5 text-center text-sm text-muted">
           {isLogin ? '처음이신가요? ' : '이미 계정이 있나요? '}
-          <Link to={isLogin ? '/register' : '/login'} className="font-medium text-blue-500 hover:underline">
+          <Link to={isLogin ? '/register' : '/login'} className="font-medium text-accent hover:underline">
             {isLogin ? '회원가입' : '로그인'}
           </Link>
         </p>

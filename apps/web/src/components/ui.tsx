@@ -5,8 +5,8 @@ export const cn = (...c: (string | false | null | undefined)[]) => c.filter(Bool
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 const VARIANT: Record<Variant, string> = {
-  primary: 'bg-gradient-to-r from-blue-600 to-violet-600 text-white hover:from-blue-500 hover:to-violet-500 shadow-sm',
-  secondary: 'bg-surface-2 text-fg border border-border hover:border-blue-500/50',
+  primary: 'border border-transparent bg-accent-strong text-white hover:brightness-95',
+  secondary: 'border border-transparent bg-surface-2 text-fg hover:bg-border',
   ghost: 'text-muted hover:bg-surface-2 hover:text-fg',
   danger: 'bg-red-600 text-white hover:bg-red-500',
 };
@@ -24,7 +24,7 @@ export function Button({
       {...rest}
       disabled={disabled || loading}
       className={cn(
-        'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-blue-500',
+        'inline-flex min-h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-[14px] px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-accent',
         VARIANT[variant],
         className,
       )}
@@ -36,7 +36,7 @@ export function Button({
 }
 
 const field =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg placeholder:text-muted/70 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20';
+  'min-h-11 w-full rounded-xl border border-transparent bg-surface-2 px-4 py-3 text-sm text-fg placeholder:text-muted/75 outline-none transition focus:border-accent focus:bg-surface focus:ring-2 focus:ring-accent/10';
 
 export const Input = ({ className, ...p }: InputHTMLAttributes<HTMLInputElement>) => <input {...p} className={cn(field, className)} />;
 export const Textarea = ({ className, ...p }: TextareaHTMLAttributes<HTMLTextAreaElement>) => (
@@ -68,11 +68,11 @@ export function Card({
   className?: string;
 }) {
   return (
-    <section className={cn('rounded-2xl border border-border bg-surface p-5 shadow-sm shadow-black/5', className)}>
+    <section className={cn('workspace-card min-w-0 rounded-[24px] bg-surface p-5 sm:p-7', className)}>
       {title && (
-        <header className="mb-4 flex items-center justify-between gap-2">
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
-            {Icon && <Icon className="size-4 text-blue-500" />}
+        <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="flex items-center gap-2.5 text-lg font-bold tracking-tight">
+            {Icon && <Icon className="size-5 shrink-0 text-muted" strokeWidth={2} />}
             {title}
           </h2>
           {action}
@@ -95,7 +95,7 @@ export const DemoBadge = () => (
 export function ProgressBar({ value, className }: { value: number; className?: string }) {
   return (
     <div className={cn('h-2 overflow-hidden rounded-full bg-surface-2', className)} role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={100}>
-      <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-violet-500 transition-all" style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
+      <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
     </div>
   );
 }
@@ -108,7 +108,7 @@ export const Spinner = ({ className }: { className?: string }) => (
 
 export const FullPageSpinner = () => (
   <div className="flex h-full items-center justify-center">
-    <Loader2 className="size-6 animate-spin text-blue-500" />
+    <Loader2 className="size-6 animate-spin text-accent" />
   </div>
 );
 

@@ -55,7 +55,7 @@ export default function CalendarTasksPage() {
                 <button
                   key={v}
                   onClick={() => setView(v)}
-                  className={cn('rounded-md px-2.5 py-1', view === v ? 'bg-blue-600 text-white' : 'text-muted hover:text-fg')}
+                  className={cn('rounded-md px-2.5 py-1', view === v ? 'bg-accent-strong text-white' : 'text-muted hover:text-fg')}
                 >
                   {v === 'month' ? '월간' : '주간'}
                 </button>
@@ -99,14 +99,14 @@ export default function CalendarTasksPage() {
                       className={cn(
                         'flex flex-col gap-1 border-b border-r border-border p-1 text-left transition-colors hover:bg-surface-2 [&:nth-child(7n)]:border-r-0',
                         view === 'month' ? 'min-h-16 sm:min-h-24' : 'min-h-48',
-                        isSel && 'bg-blue-500/5 ring-1 ring-inset ring-blue-500/50',
+                        isSel && 'bg-accent/5 ring-1 ring-inset ring-accent/50',
                       )}
                     >
                       <span className="flex items-center gap-1">
                         <span
                           className={cn(
                             'flex size-6 items-center justify-center rounded-full text-xs',
-                            isToday && 'bg-blue-600 font-semibold text-white',
+                            isToday && 'bg-accent-strong font-semibold text-white',
                             !inMonth && 'text-muted/50',
                           )}
                         >
@@ -155,7 +155,7 @@ export default function CalendarTasksPage() {
                 <li key={e.id}>
                   <button
                     onClick={() => setEventModal({ open: true, event: e })}
-                    className="flex w-full items-start gap-3 rounded-lg border border-border p-3 text-left hover:border-blue-500/50"
+                    className="flex w-full items-start gap-3 rounded-lg border border-border p-3 text-left hover:border-accent/50"
                   >
                     <span className="mt-1 h-8 w-1 shrink-0 rounded-full" style={{ background: e.color ?? CATEGORY_COLOR[e.category] }} />
                     <span className="min-w-0 flex-1">
@@ -291,7 +291,7 @@ function TasksPanel({ tasks, selected }: { tasks: ReturnType<typeof useAsync<Tas
       </div>
 
       {q && (
-        <div className="mb-3 flex items-center gap-2 rounded-lg bg-blue-500/10 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-400">
+        <div className="mb-3 flex items-center gap-2 rounded-lg bg-accent/10 px-3 py-1.5 text-xs text-accent dark:text-accent">
           <Search className="size-3.5" /> “{q}” 검색 결과
           <button onClick={() => setParams({})} className="ml-auto" aria-label="검색 해제">
             <X className="size-3.5" />

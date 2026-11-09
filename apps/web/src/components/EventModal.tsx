@@ -117,7 +117,7 @@ export default function EventModal({
     <Modal open={open} onClose={onClose} title={readOnly ? 'Google Calendar 일정' : event ? '일정 수정' : '새 일정'}>
       <form onSubmit={onSubmit} className="space-y-4">
         {readOnly && (
-          <p className="rounded-lg bg-blue-500/10 px-3 py-2 text-xs text-blue-600 dark:text-blue-400">
+          <p className="rounded-lg bg-accent/10 px-3 py-2 text-xs text-accent dark:text-accent">
             Google Calendar 에서 가져온 일정이라 여기서는 볼 수만 있어요. 수정·삭제는 Google Calendar 에서 한 뒤 설정 화면에서 동기화하세요.
           </p>
         )}
@@ -126,7 +126,7 @@ export default function EventModal({
           <Input value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={200} autoFocus />
         </Field>
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={allDay} onChange={(e) => toggleAllDay(e.target.checked)} className="size-4 accent-blue-600" />
+          <input type="checkbox" checked={allDay} onChange={(e) => toggleAllDay(e.target.checked)} className="size-4 accent-accent" />
           종일
         </label>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
