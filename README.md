@@ -1,5 +1,8 @@
 # DevMate AI
 
+일정·할 일·학습 노트·뉴스·프로젝트를 한곳에서 관리하고, 본인의 Claude로 요약·브리핑·진행률 추정을 받는 개인용 워크스페이스입니다.
+처음 쓰는 분은 [내 PC에 설치하기](#내-pc에-설치하기)를 따라 각자 PC에 설치하세요.
+
 화면은 토스뱅크를 참고해 흰색 사이드바·카드, 옅은 회색 배경, 파란색 버튼과 넓은 여백으로 구성했습니다. 메뉴는 홈·AI 비서·일정과 할 일·학습 노트·뉴스 브리핑·프로젝트입니다. 새 디자인을 처음 적용할 때 밝은 모드로 전환하며, 이후 상단 해/달 버튼이나 설정에서 선택한 테마는 유지됩니다. 좁은 화면에서는 메뉴 버튼으로 사이드바를 열고 Escape로 닫을 수 있습니다.
 
 Phase 5 통합 비서: `/assistant`에서 한국 시간 기준 아침 브리핑, 개인 비서 채팅, 통합 검색과 분야별 뉴스 요약을 제공합니다.
@@ -84,19 +87,45 @@ API: `GET /api/news?q=&category=AI`, `POST /api/news/refresh`,
 일정과 할 일, 학습 기록을 관리하는 개인 워크스페이스입니다.
 React/Vite 프론트엔드와 NestJS/Prisma/MySQL 8 백엔드를 npm workspaces로 구성합니다.
 
-## 로컬 실행
+## 내 PC에 설치하기
 
-Node.js 20.19 이상 또는 22.12 이상의 지원 버전이 필요합니다.
+DevMate AI는 **각자 자기 PC에 설치해서 쓰는 개인용 앱**입니다.
+AI 기능은 그 PC에 로그인된 **본인의 Claude Code(Pro/Max 구독)**로 동작하므로 토큰도 각자 계정에서 사용됩니다.
+데이터는 각자 PC의 MySQL에만 저장되고, 서버는 `127.0.0.1`에서만 열려 다른 기기에서는 접속되지 않습니다.
+다른 사람이 내 PC의 서버에 접속해 내 Claude 로그인으로 AI를 쓰게 하는 방식은 Anthropic 정책상 허용되지 않으니, 함께 쓰려면 각자 설치하세요.
+
+### 1. 준비물 (Windows 기준)
+
+| 필요한 것 | 설치 방법 |
+|---|---|
+| Node.js 22 LTS (20.19 이상 또는 22.12 이상) | `winget install OpenJS.NodeJS.LTS` |
+| Git | `winget install Git.Git` |
+| MySQL 8.4 | `winget install Oracle.MySQL` 후 MySQL Configurator로 서버 구성 (포트 3306, 서비스 이름 `MySQL84`) |
+| Claude Code + Pro/Max 구독 | [Claude Code 설치 안내](https://docs.anthropic.com/en/docs/claude-code) 후 터미널에서 `claude`를 한 번 실행해 로그인 |
+
+구독이 없으면 `.env`에서 `AI_PROVIDER=anthropic-api`와 본인 `ANTHROPIC_API_KEY`를 쓰거나, `AI_PROVIDER=demo`로 AI 없이 써 볼 수 있습니다.
+
+### 2. 내려받기와 설정 파일
 
 ```powershell
+git clone https://github.com/jh10050730/DevMataAI.git
+cd DevMataAI
 npm install
 Copy-Item apps/api/.env.example apps/api/.env
 ```
 
 이미 `.env`가 있으면 복사하지 말고 기존 설정을 유지하세요.
-`apps/api/.env`에서 `DATABASE_URL`(아래 MySQL 설정)과 32자 이상의 무작위 `JWT_SECRET`을 설정합니다.
+`apps/api/.env`에서 두 가지를 꼭 바꿉니다.
 
-### MySQL 설정
+- `DATABASE_URL`: 아래 3단계에서 정한 MySQL 비밀번호를 넣습니다.
+- `JWT_SECRET`: 아래 명령으로 만든 무작위 값을 넣습니다 (32자 이상).
+  ```powershell
+  node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+  ```
+
+나머지(Google·Notion·GitHub)는 비워 둬도 됩니다. 필요할 때 아래 **연동 설정**을 참고하세요.
+
+### 3. MySQL 설정
 
 MySQL 8.x 서버가 필요합니다 (Windows: `winget install Oracle.MySQL` 후 MySQL Configurator로 서버 구성, 기본 포트 3306).
 root로 접속해 앱 전용 계정과 DB를 만듭니다. 비밀번호는 직접 정하세요.
@@ -112,7 +141,9 @@ GRANT CREATE, DROP, ALTER, INDEX, REFERENCES, SELECT, INSERT, UPDATE, DELETE ON 
 `.env`: `DATABASE_URL="mysql://devmate:비밀번호@localhost:3306/devmate"`
 (비밀번호에 `@ : / # ?` 등이 있으면 URL 인코딩합니다.)
 
-아래 명령은 저장소 루트에서 실행합니다. `npm run setup`은 `prisma migrate deploy`로 마이그레이션을 적용합니다.
+### 4. DB 준비와 첫 실행
+
+아래 명령은 저장소 루트에서 실행합니다. `npm run setup`은 Prisma 클라이언트를 만들고(`prisma generate`) 마이그레이션을 적용합니다(`prisma migrate deploy`).
 
 ```powershell
 npm run setup
@@ -120,7 +151,34 @@ npm run dev
 ```
 
 웹: http://localhost:5173 · API 상태 확인: http://localhost:3000/api/health
-웹에서 회원가입 후 사용합니다. 데이터는 MySQL `devmate` DB에 저장됩니다.
+웹에서 회원가입 후 사용합니다. 계정은 각자 PC의 DB에만 만들어집니다. 데이터는 MySQL `devmate` DB에 저장됩니다.
+**설정 → AI 연결 테스트**로 Claude Code 로그인이 동작하는지 확인하세요.
+
+### 5. 매번 켜기 귀찮다면 (선택)
+
+```powershell
+npm run build            # 처음 한 번, 그리고 코드를 업데이트할 때마다
+npm run server:start     # 창 없이 백그라운드로 실행 → http://localhost:5173
+npm run server:autostart # Windows 로그인 시 자동 실행 (해제: npm run server:autostart:remove)
+npm run server:status    # 실행 상태 확인 · 끄기: npm run server:stop
+```
+
+자동 실행 중에도 화면에서 AI 기능을 누를 때만 Claude를 호출하므로, 켜 두는 것만으로 토큰이 쓰이지는 않습니다
+(뉴스 자동 수집은 RSS만 받아 오며 AI를 부르지 않습니다).
+
+### 업데이트
+
+```powershell
+npm run server:stop   # 켜 둔 서버가 있으면 먼저 끕니다 (켜진 채로는 Prisma 파일이 잠겨 EPERM 오류)
+npm run db:backup     # 권장
+git pull
+npm install
+npm run setup         # 새 마이그레이션 적용 (데이터는 지우지 않음)
+npm run build
+npm run server:start
+```
+
+### 개발 참고
 스키마를 바꾼 뒤에는 `npm run db:migrate -w apps/api -- --name <변경이름>`으로 마이그레이션을 만듭니다 (`prisma/migrations`).
 스키마를 갱신하기 전에는 DB를 백업하세요 (아래 **DB 백업**). 데이터 삭제를 허용하는 옵션은 일반 설정 과정에 필요하지 않습니다.
 이전 SQLite 파일(`apps/api/prisma/dev.db`)은 더 이상 사용하지 않으며 지우지 않고 남겨 두었습니다.

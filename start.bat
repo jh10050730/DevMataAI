@@ -5,7 +5,7 @@ title DevMate AI
 echo DevMate AI 시작 중... (이 창을 닫으면 서버가 꺼집니다)
 
 where node >nul 2>nul || (echo Node.js 가 설치되어 있지 않습니다. & pause & exit /b 1)
-if not exist "apps\api\.env" (echo apps\api\.env 가 없습니다. README 의 로컬 실행을 참고하세요. & pause & exit /b 1)
+if not exist "apps\api\.env" (echo apps\api\.env 가 없습니다. README 의 "내 PC에 설치하기"를 참고하세요. & pause & exit /b 1)
 
 sc query MySQL84 | find "RUNNING" >nul || (
   echo [경고] MySQL84 서비스가 실행 중이 아닙니다. services.msc 에서 MySQL84 를 시작하세요.

@@ -8,7 +8,7 @@
     "apps/web"
   ],
   "scripts": {
-    "setup": "npm run db:deploy -w apps/api",
+    "setup": "npm run db:generate -w apps/api && npm run db:deploy -w apps/api",
     "db:backup": "node scripts/backup-db.mjs",
     "db:verify-backup": "node scripts/verify-backup.mjs",
     "test:ops": "node --test scripts/*.test.mjs",
