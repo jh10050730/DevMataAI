@@ -15,7 +15,8 @@
 - 비서 변경 제안 확장: project_create/update, item_create/update/delete (모두 확인 후 적용).
 - 검증: API 74개(단위+e2e) + 웹 7개 테스트, 빌드, 실제 Claude `progress:smoke` 통과.
 - 이 작업과 별개로 `scripts/`의 서버 자동 시작·제어·백업 검증 파일과 `main.ts`(HOST), `.gitignore`, 루트 `package.json`,
-  `integrations.controller.ts` 변경이 다른 작업에서 생겨 있었음. 이 세션은 해당 파일을 커밋하지 않았음.
+  `integrations.controller.ts` 변경이 다른 작업에서 생겨 있었음. 사용자 요청으로 내용 확인·테스트(`test:ops` 4개, 전체 74개) 후
+  별도 커밋 `356a7fb`(서버 운영 스크립트)으로 커밋함.
 
 ## 2026-11-08 추가 작업
 
