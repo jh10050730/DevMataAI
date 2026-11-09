@@ -1,7 +1,8 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { root } from './db-tools.mjs';
-const read = path => { try { return JSON.parse(readFileSync(path, 'utf8')); } catch { return null; } };
+// Windows PowerShell 5.1의 Set-Content -Encoding UTF8은 BOM을 붙이므로 제거하고 읽는다.
+const read = path => { try { return JSON.parse(readFileSync(path, 'utf8').replace(/^﻿/, '')); } catch { return null; } };
 const control = read(join(root, '.runtime/control.json'));
 if (process.argv[2] === 'stop') {
   if (!control) console.log('관리 중인 서버가 없습니다.');
