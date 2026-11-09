@@ -95,7 +95,14 @@ model Project {
   goal String @db.Text
   description String @db.Text
   repository String @default("") @db.VarChar(200)
+  /// 이 PC의 프로젝트 폴더 절대 경로 (선택). AI 진행률 분석 시 읽기 전용으로만 사용
+  localPath String @default("") @db.VarChar(500)
   status String @default("ACTIVE")
+  /// AI가 프로젝트 파일을 근거로 추정한 진행률 (0~100). 작업 완료 기준 진행률과 별개
+  aiProgress Int?
+  /// AI 추정 근거 (JSON: summary, done, remaining, confidence, sources)
+  aiProgressDetail String? @db.Text
+  aiProgressAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

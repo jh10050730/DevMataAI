@@ -1,7 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { AuthUser, CurrentUser } from '../common/current-user.decorator';
 import { ProjectsService } from './projects.service';
-import { CreateProjectDto, UpdateProjectDto, CreateProjectItemDto, UpdateProjectItemDto } from './projects.dto';
+import { CreateProjectDto, UpdateProjectDto, CreateProjectItemDto, UpdateProjectItemDto, FileQueryDto } from './projects.dto';
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projects: ProjectsService) {}
@@ -16,4 +16,7 @@ export class ProjectsController {
   @Get(':id/github') github(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.projects.activity(u.id, id); }
   @Get(':id/reports') reports(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.projects.reports(u.id, id); }
   @Post(':id/reports') report(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.projects.report(u.id, id); }
+  @Get(':id/files') files(@CurrentUser() u: AuthUser, @Param('id') id: string, @Query() q: FileQueryDto) { return this.projects.files(u.id, id, q.source); }
+  @Get(':id/files/content') file(@CurrentUser() u: AuthUser, @Param('id') id: string, @Query() q: FileQueryDto) { if (!q.path) throw new BadRequestException('path가 필요합니다.'); return this.projects.fileContent(u.id, id, q.source, q.path); }
+  @Post(':id/analyze') analyze(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.projects.analyze(u.id, id); }
 }

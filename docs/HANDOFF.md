@@ -1,6 +1,20 @@
 # 다음 작업을 위한 인수인계
 
-기록일: 2026-11-07 (한국 시간), 2026-11-08 추가 작업 반영
+기록일: 2026-11-07 (한국 시간), 2026-11-08·09 추가 작업 반영
+
+## 2026-11-09 추가 작업
+
+- Aside 브라우저 점검(일부): 데모 데이터, 일정·할 일 DEMO 배지, 검색→노트 바로 열기, 프로젝트 작업 추가·상태 변경,
+  AI 주간 보고서, 비서 채팅 변경 제안→확인 적용까지 정상. 점검 중 Aside 연결이 끊겨 새 프로젝트 파일 화면은 아직 브라우저로 못 봄.
+- 점검에서 고친 것: 버튼 글자 두 줄 깨짐(공통 Button `whitespace-nowrap`), 노트 상세 제목이 좁은 폭에서 글자 단위로 끊김,
+  대시보드의 오래된 "Phase N 예정" 카드 → 실제 화면 바로가기, 데모 카드 문구, 주간 보고서 시각을 KST로 표기, 미사용 ComingSoonPage 삭제.
+- 채팅 Enter 보내기 / Shift+Enter 줄바꿈 (한글 조합 중 Enter 무시).
+- 프로젝트 PC 폴더·GitHub 파일 읽기(읽기 전용)와 AI 진행률 추정(`Project.localPath`, `aiProgress`, `aiProgressDetail`, `aiProgressAt`,
+  마이그레이션 `20261109003941_add_project_files_ai_progress`). 사용자는 파일 수정보다 "파일을 보고 진행률 자동 산정"을 원함.
+- 비서 변경 제안 확장: project_create/update, item_create/update/delete (모두 확인 후 적용).
+- 검증: API 74개(단위+e2e) + 웹 7개 테스트, 빌드, 실제 Claude `progress:smoke` 통과.
+- 이 작업과 별개로 `scripts/`의 서버 자동 시작·제어·백업 검증 파일과 `main.ts`(HOST), `.gitignore`, 루트 `package.json`,
+  `integrations.controller.ts` 변경이 다른 작업에서 생겨 있었음. 이 세션은 해당 파일을 커밋하지 않았음.
 
 ## 2026-11-08 추가 작업
 

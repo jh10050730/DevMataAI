@@ -1,6 +1,9 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -357,6 +360,82 @@ describe('DevMate API (e2e)', () => {
       const chat = await api().post('/api/assistant/chat').set(auth(tokenA)).send({ message: '오늘 할 일을 알려줘' }).expect(201);
       expect(chat.body.demo).toBe(true);
       expect(chat.body.actions).toEqual([]);
+    });
+  });
+
+  describe('Project files & AI project actions', () => {
+    let root: string;
+    let projectId: string;
+    beforeAll(() => {
+      root = mkdtempSync(join(tmpdir(), 'devmate-proj-'));
+      mkdirSync(join(root, 'src'));
+      mkdirSync(join(root, 'node_modules', 'x'), { recursive: true });
+      writeFileSync(join(root, 'README.md'), '# 샘플 앱\n로그인 완료, 차트 미구현');
+      writeFileSync(join(root, 'package.json'), '{"name":"sample"}');
+      writeFileSync(join(root, 'src', 'main.ts'), 'console.log(1);');
+      writeFileSync(join(root, '.env'), 'SECRET=1');
+      writeFileSync(join(root, 'node_modules', 'x', 'index.js'), '');
+      writeFileSync(join(root, 'image.bin'), Buffer.from([1, 0, 2]));
+    });
+    afterAll(() => rmSync(root, { recursive: true, force: true }));
+
+    it('PC 폴더 등록 검증: 상대 경로·없는 폴더·드라이브 루트 거부', async () => {
+      await api().post('/api/projects').set(auth(tokenA)).send({ name: 'x', localPath: 'relative/dir' }).expect(400);
+      await api().post('/api/projects').set(auth(tokenA)).send({ name: 'x', localPath: join(root, 'missing') }).expect(400);
+      await api().post('/api/projects').set(auth(tokenA)).send({ name: 'x', localPath: process.platform === 'win32' ? 'C:\\' : '/' }).expect(400);
+      const created = await api().post('/api/projects').set(auth(tokenA)).send({ name: '파일 프로젝트', goal: '로그인과 차트', localPath: root }).expect(201);
+      projectId = created.body.id;
+      expect(created.body.localPath).toBeTruthy();
+    });
+
+    it('파일 목록은 비밀·의존성 폴더를 숨기고 내용 읽기는 폴더 안 텍스트만 허용', async () => {
+      const list = await api().get(`/api/projects/${projectId}/files?source=local`).set(auth(tokenA)).expect(200);
+      const paths = list.body.files.map((f: { path: string }) => f.path);
+      expect(paths).toEqual(expect.arrayContaining(['README.md', 'package.json', 'src/main.ts']));
+      expect(paths).not.toContain('.env');
+      expect(paths.some((p: string) => p.startsWith('node_modules'))).toBe(false);
+      const file = await api().get(`/api/projects/${projectId}/files/content?source=local&path=src/main.ts`).set(auth(tokenA)).expect(200);
+      expect(file.body.content).toBe('console.log(1);');
+      for (const bad of ['.env', '../outside.txt', 'node_modules/x/index.js', 'image.bin', 'missing.txt'])
+        await api().get(`/api/projects/${projectId}/files/content?source=local&path=${encodeURIComponent(bad)}`).set(auth(tokenA)).expect(400);
+      await api().get(`/api/projects/${projectId}/files?source=github`).set(auth(tokenA)).expect(400);
+      await api().get(`/api/projects/${projectId}/files?source=local`).set(auth(tokenB)).expect(404);
+    });
+
+    it('AI 진행률 분석: 데모 모드는 값을 저장하지 않고 읽은 파일만 알려줌', async () => {
+      const res = await api().post(`/api/projects/${projectId}/analyze`).set(auth(tokenA)).expect(201);
+      expect(res.body.demo).toBe(true);
+      expect(res.body.sources[0].read).toEqual(expect.arrayContaining(['README.md', 'package.json']));
+      const project = await api().get(`/api/projects/${projectId}`).set(auth(tokenA)).expect(200);
+      expect(project.body.aiProgress).toBeNull();
+      const bare = await api().post('/api/projects').set(auth(tokenA)).send({ name: '폴더 없음' }).expect(201);
+      await api().post(`/api/projects/${bare.body.id}/analyze`).set(auth(tokenA)).expect(400);
+      await api().post(`/api/projects/${projectId}/analyze`).set(auth(tokenB)).expect(404);
+    });
+
+    it('비서 제안으로 프로젝트 추가·수정, 작업 추가·상태 변경·삭제 (확인 후에만 적용)', async () => {
+      const db = app.get(PrismaService);
+      const confirm = async (body: object) => {
+        const p = await api().post('/api/assistant/actions').set(auth(tokenA)).send(body).expect(201);
+        return (await api().post(`/api/assistant/actions/${p.body.id}/confirm`).set(auth(tokenA)).expect(201)).body;
+      };
+      const created = await confirm({ kind: 'project_create', targetId: 'new', name: '비서가 만든 프로젝트', goal: '목표' });
+      expect((await db.project.findUniqueOrThrow({ where: { id: created.targetId } })).name).toBe('비서가 만든 프로젝트');
+      await confirm({ kind: 'project_update', targetId: created.targetId, status: 'PAUSED', goal: '바뀐 목표' });
+      expect(await db.project.findUniqueOrThrow({ where: { id: created.targetId } })).toMatchObject({ status: 'PAUSED', goal: '바뀐 목표' });
+      const item = await confirm({ kind: 'item_create', targetId: created.targetId, title: '차트', itemKind: 'FEATURE' });
+      await confirm({ kind: 'item_update', targetId: item.targetId, status: 'DONE' });
+      expect((await db.projectItem.findUniqueOrThrow({ where: { id: item.targetId } })).completedAt).not.toBeNull();
+      await confirm({ kind: 'item_delete', targetId: item.targetId });
+      expect(await db.projectItem.findUnique({ where: { id: item.targetId } })).toBeNull();
+      // 잘못된 값·다른 사용자 대상·바꿀 내용 없음은 제안 단계에서 거부
+      await api().post('/api/assistant/actions').set(auth(tokenA)).send({ kind: 'project_create', targetId: 'new' }).expect(400);
+      await api().post('/api/assistant/actions').set(auth(tokenA)).send({ kind: 'project_update', targetId: created.targetId }).expect(400);
+      await api().post('/api/assistant/actions').set(auth(tokenA)).send({ kind: 'project_update', targetId: created.targetId, status: 'DONE' }).expect(400);
+      await api().post('/api/assistant/actions').set(auth(tokenB)).send({ kind: 'item_create', targetId: created.targetId, title: '침입' }).expect(404);
+      // 제안만으로는 만들어지지 않는다
+      await api().post('/api/assistant/actions').set(auth(tokenA)).send({ kind: 'project_create', targetId: 'new', name: '확인 안 함' }).expect(201);
+      expect(await db.project.count({ where: { name: '확인 안 함' } })).toBe(0);
     });
   });
 

@@ -35,9 +35,9 @@ function EventRow({ e }: { e: CalendarEvent }) {
 }
 
 /** 이후 Phase 에서 채워질 영역 */
-function Upcoming({ icon: Icon, title, phase, text }: { icon: LucideIcon; title: string; phase: number; text: string }) {
+function Shortcut({ icon: Icon, title, text, to }: { icon: LucideIcon; title: string; text: string; to: string }) {
   return (
-    <Card title={title} icon={Icon} action={<span className="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] text-muted">Phase {phase}</span>}>
+    <Card title={title} icon={Icon} action={<Link to={to} className="text-xs text-blue-500 hover:underline">열기 →</Link>}>
       <p className="text-sm text-muted">{text}</p>
     </Card>
   );
@@ -191,13 +191,13 @@ export default function DashboardPage() {
               )}
             </Card>
 
-            <Upcoming icon={Sparkles} title="AI 추천 우선순위" phase={5} text="일정·할 일·학습·프로젝트를 종합해 오늘의 우선순위를 추천할 예정이에요." />
+            <Shortcut icon={Sparkles} title="AI 비서 · 아침 브리핑" to="/assistant" text="일정·할 일·복습·프로젝트·뉴스를 모아 오늘의 우선순위를 보여주고, 채팅으로 정리를 도와줘요." />
           </div>
 
           <div className="grid gap-6 md:grid-cols-3">
             <DueReviewCard />
-            <Upcoming icon={Newspaper} title="추천 IT 뉴스" phase={3} text="관심 분야 기반 IT 뉴스 요약이 여기에 표시돼요." />
-            <Upcoming icon={FolderGit2} title="GitHub 개발 현황" phase={4} text="프로젝트 진행률과 최근 커밋 활동이 여기에 표시돼요." />
+            <Shortcut icon={Newspaper} title="오늘의 뉴스" to="/news" text="매일 아침 7시에 모은 IT·경제 뉴스와 분야별 브리핑을 확인하세요." />
+            <Shortcut icon={FolderGit2} title="프로젝트 현황" to="/projects" text="작업 완료율과 AI 추정 진행률, GitHub 최근 활동, 주간 보고서를 확인하세요." />
           </div>
         </>
       )}

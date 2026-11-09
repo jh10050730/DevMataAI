@@ -25,3 +25,26 @@ describe('GitHub activity', () => {
     expect(fetch.mock.calls[0][1]?.headers).not.toHaveProperty('Authorization');
   });
 });
+describe('GitHub files (읽기 전용)', () => {
+  afterEach(() => jest.restoreAllMocks());
+  it('기본 브랜치 트리에서 비밀·의존성 파일을 빼고, 파일 내용은 raw로 읽음', async () => {
+    const fetch = jest.spyOn(global, 'fetch').mockImplementation(async input => {
+      const url = String(input);
+      if (url.endsWith('/repos/a/b')) return new Response(JSON.stringify({ default_branch: 'main' }));
+      if (url.includes('/git/trees/main?recursive=1')) return new Response(JSON.stringify({ truncated: false, tree: [
+        { path: 'README.md', type: 'blob', size: 10 }, { path: 'src', type: 'tree' }, { path: 'src/a.ts', type: 'blob', size: 5 },
+        { path: '.env', type: 'blob', size: 3 }, { path: 'node_modules/x.js', type: 'blob', size: 1 },
+      ] }));
+      if (url.includes('/contents/src/a.ts')) return new Response('const a = 1;');
+      return new Response('', { status: 404 });
+    });
+    const service = new GithubService(new ConfigService());
+    const list = await service.files('a/b');
+    expect(list.branch).toBe('main');
+    expect(list.files.map(f => f.path)).toEqual(['README.md', 'src/a.ts']);
+    expect(await service.read('a/b', 'src/a.ts')).toBe('const a = 1;');
+    expect(fetch.mock.calls.every(([, init]) => !init?.method || init.method === 'GET')).toBe(true);
+    await expect(service.read('a/b', '.env')).rejects.toThrow('읽을 수 없는 경로');
+    await expect(service.read('a/b', 'missing.md')).rejects.toThrow('찾을 수 없');
+  });
+});

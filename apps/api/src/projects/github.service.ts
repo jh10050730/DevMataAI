@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { MAX_LIST, MAX_READ, isAllowedPath } from './project-files';
 type Row = { sha?: string; number?: number; title?: string; state?: string; html_url: string; updated_at?: string; pull_request?: unknown; commit?: { message: string; author?: { date?: string } } };
 @Injectable()
 export class GithubService {
@@ -26,5 +27,39 @@ export class GithubService {
       } catch { return { kind: spec.kind, ok: false, message: 'GitHub에 연결하지 못했습니다.', items: [], truncated: false }; }
     }));
     return { connected: sections.some(s => s.ok), repository, url: `https://github.com/${repository}`, since, until: new Date().toISOString(), authenticated: !!token, message: '최근 7일 기본 브랜치 커밋과 업데이트된 이슈·PR입니다. 각 항목은 최대 100개이며 커밋 수는 진행률에 반영하지 않습니다.', sections };
+  }
+
+  private headers(accept = 'application/vnd.github+json') {
+    const headers: Record<string, string> = { Accept: accept, 'User-Agent': 'DevMateAI' };
+    const token = this.config.get<string>('GITHUB_TOKEN');
+    if (token) headers.Authorization = `Bearer ${token}`;
+    return headers;
+  }
+  private base(repository: string) { return `https://api.github.com/repos/${repository.split('/').map(encodeURIComponent).join('/')}`; }
+  private async get(url: string, accept?: string) {
+    let res: Response;
+    try { res = await fetch(url, { headers: this.headers(accept), signal: AbortSignal.timeout(15000), redirect: 'error' }); }
+    catch { throw new BadGatewayException('GitHub에 연결하지 못했습니다.'); }
+    if (res.status === 404) throw new NotFoundException('저장소나 파일을 찾을 수 없거나 접근 권한이 없습니다. 비공개 저장소는 GITHUB_TOKEN이 필요합니다.');
+    if (!res.ok) throw new BadGatewayException('GitHub 권한 또는 호출 한도를 확인하세요.');
+    return res;
+  }
+
+  /** 기본 브랜치의 전체 파일 목록 (읽기 전용). */
+  async files(repository: string, limit = MAX_LIST) {
+    const repo = await (await this.get(this.base(repository))).json() as { default_branch: string };
+    const tree = await (await this.get(`${this.base(repository)}/git/trees/${encodeURIComponent(repo.default_branch)}?recursive=1`)).json() as { tree: { path: string; type: string; size?: number }[]; truncated: boolean };
+    const all = tree.tree.filter(t => t.type === 'blob' && isAllowedPath(t.path)).map(t => ({ path: t.path, size: t.size ?? 0 }));
+    return { branch: repo.default_branch, files: all.slice(0, limit), truncated: tree.truncated || all.length > limit };
+  }
+
+  /** 기본 브랜치의 텍스트 파일 하나 (읽기 전용). */
+  async read(repository: string, path: string, max = MAX_READ) {
+    if (!isAllowedPath(path)) throw new BadRequestException('읽을 수 없는 경로입니다.');
+    const res = await this.get(`${this.base(repository)}/contents/${path.split('/').map(encodeURIComponent).join('/')}`, 'application/vnd.github.raw+json');
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length > max) throw new BadRequestException(`파일이 너무 큽니다 (최대 ${Math.round(max / 1000)}KB).`);
+    if (buf.subarray(0, 8000).includes(0)) throw new BadRequestException('텍스트 파일만 읽을 수 있습니다.');
+    return buf.toString('utf8');
   }
 }

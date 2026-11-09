@@ -3,13 +3,14 @@ import { FolderGit2, Plus, Trash2 } from 'lucide-react';
 import { api, errorMessage } from '../lib/api';
 import { Badge, Button, Card, EmptyState, ErrorState, Field, Input, Modal, ProgressBar, Select, Spinner, Textarea } from '../components/ui';
 import Markdown from '../components/Markdown';
+import ProjectFilesCard, { type FilesProject } from '../components/ProjectFilesCard';
 
 type Item = { id: string; title: string; kind: string; status: string; notes: string };
-type Project = { id: string; name: string; goal: string; description: string; repository: string; status: string; items: Item[]; progress: { total: number; done: number; rate: number } };
+type Project = FilesProject & { name: string; goal: string; description: string; status: string; items: Item[]; progress: { total: number; done: number; rate: number } };
 type Report = { id: string; content: string; demo: boolean; provider: string; createdAt: string };
 type Activity = { connected: boolean; message: string; sections: { kind: string; ok: boolean; message?: string; truncated: boolean; items: { id: string; title: string; url: string; state?: string; date?: string }[] }[] };
 const statuses: Record<string, string> = { TODO: '예정', IN_PROGRESS: '진행 중', BLOCKED: '문제 있음', DONE: '완료' };
-const emptyForm = { name: '', goal: '', description: '', repository: '', status: 'ACTIVE' };
+const emptyForm = { name: '', goal: '', description: '', repository: '', localPath: '', status: 'ACTIVE' };
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selected, setSelected] = useState('');
@@ -43,7 +44,7 @@ export default function ProjectsPage() {
   }
   function editProject() {
     if (!project) return;
-    setForm({ name: project.name, goal: project.goal, description: project.description, repository: project.repository, status: project.status }); setEditor('edit');
+    setForm({ name: project.name, goal: project.goal, description: project.description, repository: project.repository, localPath: project.localPath, status: project.status }); setEditor('edit');
   }
   async function saveProject(e: FormEvent) {
     e.preventDefault();
@@ -65,9 +66,13 @@ export default function ProjectsPage() {
         <Card title={project.name} action={<div className="flex gap-2"><Button disabled={busy} variant="secondary" onClick={editProject}>수정</Button><Button disabled={busy} variant="danger" aria-label="프로젝트 삭제" onClick={() => { if (window.confirm('프로젝트와 모든 작업·보고서를 삭제할까요?')) void run(async () => { await api.delete(`/projects/${selected}`); await load(); }); }}><Trash2 className="size-4" /></Button></div>}>
           <Badge className="mb-3 bg-blue-500/10 text-blue-500">{{ ACTIVE: '진행 중', PAUSED: '일시 중지', COMPLETED: '완료' }[project.status]}</Badge>
           <p className="mb-2 whitespace-pre-wrap text-sm">목표: {project.goal || '목표를 작성해 주세요.'}</p><p className="mb-4 whitespace-pre-wrap text-sm text-muted">{project.description}</p>
-          <ProgressBar value={project.progress.rate} /><p className="mt-2 text-xs text-muted">등록된 기능·작업 {project.progress.total}개 중 {project.progress.done}개 완료 · {project.progress.rate}%</p>
-          {project.repository && <a className="mt-3 inline-block text-sm text-blue-500" href={`https://github.com/${project.repository}`} target="_blank" rel="noopener noreferrer">{project.repository} ↗</a>}
+          <ProgressBar value={project.progress.rate} /><p className="mt-2 text-xs text-muted">등록된 기능·작업 {project.progress.total}개 중 {project.progress.done}개 완료 · {project.progress.rate}%{project.aiProgress !== null && <> · <span className="text-violet-500">AI 추정 {project.aiProgress}%</span></>}</p>
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            {project.repository && <a className="text-blue-500" href={`https://github.com/${project.repository}`} target="_blank" rel="noopener noreferrer">{project.repository} ↗</a>}
+            {project.localPath && <span className="break-all text-muted">PC 폴더: {project.localPath}</span>}
+          </div>
         </Card>
+        <ProjectFilesCard project={project} onAnalyzed={load} />
         <Card title="기능과 작업">
           <form onSubmit={addItem} className="mb-4 space-y-2"><div className="flex gap-2"><Select aria-label="항목 종류" className="max-w-24" value={kind} onChange={e => setKind(e.target.value)}><option value="TASK">작업</option><option value="FEATURE">기능</option></Select><Input required maxLength={200} aria-label="작업 제목" placeholder="구현할 기능 또는 작업" value={title} onChange={e => setTitle(e.target.value)} /><Button type="submit" disabled={busy}>추가</Button></div><Textarea aria-label="작업 메모" maxLength={5000} placeholder="작업 내용이나 예상 문제 (선택)" value={notes} onChange={e => setNotes(e.target.value)} /></form>
           {!project.items.length && <EmptyState title="등록된 작업이 없습니다" />}
@@ -83,7 +88,7 @@ export default function ProjectsPage() {
         </Card>
       </>}
     </>}
-    <Modal open={editor !== null} onClose={() => { if (!busy) setEditor(null); }} title={editor === 'new' ? '새 프로젝트' : '프로젝트 수정'}><form onSubmit={saveProject} className="space-y-4"><Field label="프로젝트 이름"><Input required maxLength={120} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></Field><Field label="목표"><Textarea maxLength={2000} value={form.goal} onChange={e => setForm({ ...form, goal: e.target.value })} /></Field><Field label="설명"><Textarea maxLength={10000} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></Field><Field label="GitHub 저장소" hint="예: owner/repository"><Input maxLength={200} pattern="[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+" value={form.repository} onChange={e => setForm({ ...form, repository: e.target.value })} /></Field>{editor === 'edit' && <Field label="상태"><Select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}><option value="ACTIVE">진행 중</option><option value="PAUSED">일시 중지</option><option value="COMPLETED">완료</option></Select></Field>}<Button type="submit" loading={busy}>저장</Button></form></Modal>
+    <Modal open={editor !== null} onClose={() => { if (!busy) setEditor(null); }} title={editor === 'new' ? '새 프로젝트' : '프로젝트 수정'}><form onSubmit={saveProject} className="space-y-4"><Field label="프로젝트 이름"><Input required maxLength={120} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></Field><Field label="목표"><Textarea maxLength={2000} value={form.goal} onChange={e => setForm({ ...form, goal: e.target.value })} /></Field><Field label="설명"><Textarea maxLength={10000} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></Field><Field label="GitHub 저장소" hint="예: owner/repository"><Input maxLength={200} pattern="[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+" value={form.repository} onChange={e => setForm({ ...form, repository: e.target.value })} /></Field><Field label="PC 폴더 경로 (선택)" hint="예: C:\Users\me\projects\my-app · AI 진행률 분석에서 읽기 전용으로 사용"><Input maxLength={500} value={form.localPath} onChange={e => setForm({ ...form, localPath: e.target.value })} /></Field>{editor === 'edit' && <Field label="상태"><Select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}><option value="ACTIVE">진행 중</option><option value="PAUSED">일시 중지</option><option value="COMPLETED">완료</option></Select></Field>}<Button type="submit" loading={busy}>저장</Button></form></Modal>
     <Modal open={!!editingItem} onClose={() => { if (!busy) setEditingItem(null); }} title="작업 편집">{editingItem && <form className="space-y-4" onSubmit={e => { e.preventDefault(); void run(async () => { await api.patch(`/projects/${selected}/items/${editingItem.id}`, { title: editingItem.title, notes: editingItem.notes }); await load(); setEditingItem(null); }); }}><Field label="제목"><Input required maxLength={200} value={editingItem.title} onChange={e => setEditingItem({ ...editingItem, title: e.target.value })} /></Field><Field label="내용·문제 메모"><Textarea maxLength={5000} value={editingItem.notes} onChange={e => setEditingItem({ ...editingItem, notes: e.target.value })} /></Field><Button loading={busy} type="submit">저장</Button></form>}</Modal>
   </div>;
 }

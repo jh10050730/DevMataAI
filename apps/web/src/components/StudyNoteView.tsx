@@ -222,8 +222,8 @@ export default function StudyNoteView({
           <button onClick={onBack} className="rounded-md p-1 text-muted hover:bg-surface-2 lg:hidden" aria-label="목록으로">
             <ArrowLeft className="size-4" />
           </button>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-semibold">{note.title}</h2>
+          <div className="min-w-[12rem] flex-1">
+            <h2 className="break-words text-lg font-semibold">{note.title}</h2>
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
               <Badge className="bg-surface-2 text-muted">
                 <span className="mr-1 size-1.5 rounded-full" style={{ background: note.subject?.color ?? '#64748b' }} />
@@ -237,7 +237,7 @@ export default function StudyNoteView({
               {note.notionPageId && <Badge className="bg-surface-2 text-muted">Notion 연결됨</Badge>}
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
             <Button variant="secondary" onClick={() => setEditing(true)} className="px-2.5 py-1.5 text-xs">
               <Pencil className="size-3.5" /> 편집
             </Button>
