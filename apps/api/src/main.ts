@@ -15,7 +15,7 @@ async function bootstrap() {
   });
 
   const port = config.get<number>('PORT', 3000);
-  await app.listen(port);
+  await app.listen(port, config.get<string>('HOST', '127.0.0.1'));
   Logger.log(`DevMate AI API → http://localhost:${port}/api`, 'Bootstrap');
 }
 

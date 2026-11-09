@@ -18,7 +18,7 @@ export class IntegrationsController {
     return {
       ai,
       notion,
-      github: { configured: !!this.config.get('GITHUB_TOKEN'), detail: 'Phase 4 에서 연결 예정' },
+      github: { configured: !!this.config.get('GITHUB_TOKEN'), detail: this.config.get('GITHUB_TOKEN') ? '프로젝트에서 권한이 있는 저장소의 활동을 조회할 수 있습니다.' : '공개 저장소는 토큰 없이 조회할 수 있습니다. 프로젝트에 owner/repository를 입력하세요.' },
       googleCalendar: {
         configured: !!(this.config.get('GOOGLE_CLIENT_ID') && this.config.get('GOOGLE_CLIENT_SECRET')),
         detail:
