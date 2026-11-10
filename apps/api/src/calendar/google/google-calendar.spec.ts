@@ -1,4 +1,4 @@
-import { decryptToken, encryptToken, signState, verifyState } from './google-crypto';
+import { decryptToken, encryptToken, pkceChallenge, pkceVerifier, signState, verifyState } from './google-crypto';
 import { mapGoogleEvent } from './google-calendar.service';
 
 const SECRET = 'test-secret-that-is-at-least-32-characters-long';
@@ -30,6 +30,18 @@ describe('google-crypto', () => {
     expect(verifyState(`${forged}.${sig}`, SECRET, now)).toBeNull();
     expect(verifyState(body, SECRET, now)).toBeNull();
     expect(verifyState('garbage', SECRET, now)).toBeNull();
+  });
+
+  it('PKCE: 로그인마다 다른 43자 열쇠, 같은 state 면 콜백에서 같은 값, RFC 7636 예시와 일치', () => {
+    const a = signState('user-1', SECRET);
+    const b = signState('user-1', SECRET);
+    const verifier = pkceVerifier(a, SECRET);
+    expect(verifier).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(pkceVerifier(a, SECRET)).toBe(verifier); // 콜백에서 다시 계산
+    expect(pkceVerifier(b, SECRET)).not.toBe(verifier); // state 난수가 달라 열쇠도 다름
+    expect(pkceVerifier(a, SECRET + 'x')).not.toBe(verifier);
+    // RFC 7636 부록 B
+    expect(pkceChallenge('dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk')).toBe('E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM');
   });
 });
 

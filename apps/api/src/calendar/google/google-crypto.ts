@@ -28,6 +28,18 @@ export function signState(userId: string, secret: string, ttlMs = 10 * 60_000, n
   return `${body}.${sig}`;
 }
 
+/**
+ * PKCE(RFC 7636): 로그인마다 다른 일회용 열쇠. state(매번 다른 난수 포함)와 서버 비밀값으로 계산하므로 저장할 필요가 없다.
+ * 데스크톱 앱 클라이언트는 비밀번호를 숨길 수 없어서, 가로챈 인증 코드를 쓰지 못하게 막는 역할을 한다.
+ */
+export function pkceVerifier(state: string, secret: string): string {
+  return createHmac('sha256', key(secret, 'oauth-pkce')).update(state).digest('base64url'); // 43자
+}
+
+export function pkceChallenge(verifier: string): string {
+  return createHash('sha256').update(verifier).digest('base64url');
+}
+
 export function verifyState(state: string, secret: string, now = Date.now()): string | null {
   const [body, sig] = state.split('.');
   if (!body || !sig) return null;

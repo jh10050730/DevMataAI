@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
-import { decryptToken, encryptToken, signState, verifyState } from './google-crypto';
+import { decryptToken, encryptToken, pkceChallenge, pkceVerifier, signState, verifyState } from './google-crypto';
 
 const PROVIDER = 'GOOGLE_CALENDAR';
 const SOURCE = 'GOOGLE';
@@ -127,6 +127,7 @@ export class GoogleCalendarService {
   /** Google 로그인 화면 주소 (state 에 사용자 ID 를 서명해 담는다) */
   authUrl(userId: string) {
     this.assertConfigured();
+    const state = signState(userId, this.secret);
     const params = new URLSearchParams({
       client_id: this.clientId,
       redirect_uri: this.redirectUri,
@@ -135,7 +136,9 @@ export class GoogleCalendarService {
       access_type: 'offline', // refresh token 발급
       prompt: 'consent',
       include_granted_scopes: 'true',
-      state: signState(userId, this.secret),
+      state,
+      code_challenge: pkceChallenge(pkceVerifier(state, this.secret)),
+      code_challenge_method: 'S256',
     });
     return { url: `https://accounts.google.com/o/oauth2/v2/auth?${params}` };
   }
@@ -156,6 +159,7 @@ export class GoogleCalendarService {
       client_secret: this.clientSecret,
       redirect_uri: this.redirectUri,
       grant_type: 'authorization_code',
+      code_verifier: pkceVerifier(state!, this.secret),
     });
     if (!token.scope?.includes('calendar.readonly')) {
       throw new BadRequestException('캘린더 읽기 권한이 허용되지 않았습니다. 연결할 때 권한을 체크해주세요.');
