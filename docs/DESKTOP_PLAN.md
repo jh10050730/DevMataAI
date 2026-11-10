@@ -68,6 +68,63 @@ GET /api/ai/claude-code → { installed: boolean, version?: string, path?: strin
 
 - `DATABASE_URL=file:<%APPDATA%/DevMata AI/devmata.db>`, `JWT_SECRET`(자동 생성·보관), `HOST=127.0.0.1`, `PORT`, `WEB_ORIGIN`
 - 웹은 API와 같은 출처에서 제공된다 (`/api` 프록시 불필요).
+- 설치본에는 Google OAuth 클라이언트(Desktop 유형) 기본값이 들어 있다 (`resources/api/app-defaults.json`, 환경변수로 전달). `AppSetting` 값이 있으면 그쪽이 우선.
+
+**앱 정보·업데이트 API (Claude가 C4·C5에서 만든다, Codex는 화면만)**
+
+```
+GET  /api/desktop/info    → { desktop: boolean, version: string, dataDir?: string, logDir?: string, update?: { state: "idle"|"checking"|"available"|"downloading"|"ready"|"error", version?: string, error?: string } }
+POST /api/desktop/open    { target: "data" | "logs" }   → 204 (탐색기로 폴더 열기, 관리자만)
+POST /api/desktop/update  { action: "check" | "install" } → 202 (install 은 재시작해서 업데이트)
+```
+
+- 웹 실행(개발 서버)에서는 `{ desktop: false, version }` 만 온다. 화면은 `desktop` 이 false 면 데스크톱 전용 항목을 숨긴다.
+
+## 다음 작업 (2026-11-10 정리)
+
+**사용자**
+
+| # | 할 일 | 언제 |
+|---|---|---|
+| U1 | 로컬 커밋 푸시 허락 (로고·설치 파일·Google PKCE·앱 복귀 등) | 지금 |
+| U2 | 앱에서 Google **지금 동기화** 눌러 일정이 들어오는지 확인 | 지금 |
+| U3 | 새 설치 파일을 직접 설치해 확인 (개발용 앱은 트레이 → 종료 후) | C1 후 |
+| U4 | 기존 '웹 애플리케이션' OAuth 클라이언트 삭제 (Desktop 클라이언트로 잘 되면) | U3 후 |
+| U5 | GitHub 저장소 Settings → Secrets 에 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` 등록 (CI 가 설치 파일을 만들 때 씀) | C3 때 |
+| U6 | (선택) Google 앱 검수 신청 → "확인되지 않은 앱" 경고 제거. 본인 소유 도메인 확인 필요 (GitHub Pages 가능) | 나중 |
+| U7 | (선택) 코드 서명 인증서 → SmartScreen 경고 제거. 유료 | 나중 |
+
+**Claude**
+
+| # | 할 일 |
+|---|---|
+| C1 | 설치 파일 다시 빌드 (새 Desktop 클라이언트·PKCE·앱 복귀 반영), 설치본 실제 실행 점검: 창·트레이·작업 관리자 이름·Windows 시작 시 자동 실행 메뉴·제거 후 데이터 유지 |
+| C2 | 예전 자동 실행 정리: `Startup\DevMata AI.lnk`(serve.mjs, 5173/3000) 제거 → 설치본의 자동 실행으로 대체. `start.bat`·`serve.mjs` 는 개발용으로 남기고 안내 갱신. OneDrive 안 빌드 찌꺼기(`apps/desktop/release`) 삭제 |
+| C3 | GitHub Actions: push/PR → 타입 검사·전체 테스트, `v*` 태그 → windows 에서 설치 파일 빌드 후 Releases 업로드 (`GITHUB_TOKEN`, Google 키는 Secrets) |
+| C4 | 자동 업데이트 (electron-updater + GitHub Releases): 시작 시·6시간마다 확인, 내려받으면 트레이·화면에 "재시작해서 업데이트". `POST /api/desktop/update` |
+| C5 | `GET /api/desktop/info`, `POST /api/desktop/open` (버전·데이터 폴더·로그 폴더) — 위 인터페이스 약속대로 |
+| C6 | 설치본 자동 백업: 하루 한 번 `%APPDATA%\DevMata AI\backups` 에 `VACUUM INTO`, 최근 7개 보관. 복원 방법 안내 |
+| C7 | 로그 크기 제한 (`logs/api.log` 5MB 넘으면 교체, 3개 보관) |
+| C8 | 버전 관리: `npm run release <버전>` → 버전 올리기·태그. 화면 표시 버전과 설치 파일 버전 일치 |
+| C9 | 설치본에서 Claude Code 찾기 점검 (설치본은 PATH 가 다를 수 있음: `%APPDATA%\npm`, `%LOCALAPPDATA%\…` 등) — Codex 의 확인 코드와 함께 |
+
+**Codex** (자기 파일 경계 안에서. 새 API 가 필요하면 위 약속을 쓰거나 요청 표에 적기)
+
+| # | 할 일 |
+|---|---|
+| X1 | **6단계 README 재작성**: ① 설치 파일 받기(Releases 링크) ② 설치·SmartScreen "추가 정보 → 실행" ③ 첫 실행: 회원가입(첫 계정 = 관리자) ④ Claude Code 설치·로그인·연결 테스트 ⑤ 연동: Google 은 버튼만, Notion·GitHub 은 각자 토큰 ⑥ 업데이트·제거·데이터 위치(`%APPDATA%\DevMata AI`)·백업·복원 ⑦ 자주 묻는 질문(포트 사용 중, Google 경고, AI 연결 실패). 개발자용 실행은 아래 "개발" 절로. 스크린샷 자리 표시 |
+| X2 | 설정 → Google Calendar 카드: 데스크톱에서는 리디렉션 URI·Google Cloud 설정 문구 숨김 (Desktop 클라이언트는 등록 불필요). 연결 결과(`?google=`) 안내를 보여 준 뒤 주소에서 쿼리 제거. 실패 이유 문구 다듬기 |
+| X3 | Google 연결 직후 자동으로 첫 동기화, "마지막 동기화 시각·가져오는 기간·가져온 일정 수" 표시, 0개일 때 이유 안내 (기본 캘린더만, 기간 밖) |
+| X4 | 앱 연결 설정(관리자) 화면: Google 키가 **설치본 기본값**으로 채워져 있으면 "기본값 사용 중" 표시, 직접 입력하면 덮어쓴다는 안내. API 응답에 값 출처(`db`/`env`) 추가 (app-settings 모듈) |
+| X5 | **앱 정보** 화면 (설정 맨 아래): 버전, 업데이트 확인·"재시작해서 업데이트" 버튼, 데이터 폴더·로그 폴더 열기 — C4·C5 API 사용, `desktop:false` 면 숨김 |
+| X6 | Notion·GitHub 연결 안내: 사용자가 **자기** 토큰을 만드는 단계별 안내(Notion 통합 만들기·페이지 공유, GitHub fine-grained 토큰 권한) 와 링크(외부 브라우저로 열림). 토큰 입력 칸 검증 문구 |
+| X7 | 새로 설치한 빈 상태 점검: 첫 실행 → 가입 → Claude 안내 → 연동까지 막힘 없는지, 홈·일정·학습 노트·뉴스·프로젝트의 빈 화면 문구와 "처음 해 볼 일" 안내 |
+| X8 | API 연결이 끊겼을 때(앱 서버 재시작 중 등) 화면: 재시도 안내, 무한 로딩 방지 |
+| X9 | 작은 창(최소 380px)·큰 글꼴(Windows 배율 150%)에서 레이아웃 점검, 사이드바 접힘 |
+| X10 | 비밀번호 재설정: 데스크톱에서 메일 설정이 없으면 "메일 없이 재설정" 대안(관리자가 재설정 또는 안내)으로, 메일 의존 화면 정리 |
+| X11 | 테스트 보강: Google 콜백 데스크톱 모드 e2e (`DEVMATA_DESKTOP=1` → HTML 안내, IPC 없으면 리디렉션), 설정 화면 vitest (Google 결과 표시·관리자 전용 항목) |
+| X12 | `docs/HANDOFF.md` 최신화 (데스크톱 앱 기준 구조·실행·빌드·배포 흐름) |
+| X13 | 앱 안 도움말 페이지(또는 설정의 "도움말" 절): README 핵심을 짧게, 문제 해결 링크 |
 
 ## 요청
 
