@@ -1,11 +1,16 @@
 import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { IsIn } from 'class-validator';
 import { AuthUser, CurrentUser } from '../common/current-user.decorator';
-import { DesktopService, FOLDER_TARGETS, type FolderTarget } from './desktop.service';
+import { DesktopService, FOLDER_TARGETS, UPDATE_ACTIONS, type FolderTarget, type UpdateAction } from './desktop.service';
 
 class OpenFolderDto {
   @IsIn(FOLDER_TARGETS)
   target: FolderTarget;
+}
+
+class UpdateDto {
+  @IsIn(UPDATE_ACTIONS)
+  action: UpdateAction;
 }
 
 @Controller('desktop')
@@ -23,5 +28,12 @@ export class DesktopController {
   @HttpCode(204)
   async open(@CurrentUser() user: AuthUser, @Body() dto: OpenFolderDto) {
     await this.desktop.open(user.id, dto.target);
+  }
+
+  /** POST /api/desktop/update { action: "check" | "install" } — 업데이트 확인·재시작해서 설치 */
+  @Post('update')
+  @HttpCode(202)
+  update(@Body() dto: UpdateDto) {
+    this.desktop.requestUpdate(dto.action);
   }
 }

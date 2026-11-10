@@ -8,7 +8,8 @@ export const isDesktop = () => process.env.DEVMATA_DESKTOP === '1';
 export type DesktopMessage =
   | { type: 'open-app'; path: string }
   | { type: 'reset-password'; email: string; path: string }
-  | { type: 'open-folder'; target: 'data' | 'logs' };
+  | { type: 'open-folder'; target: 'data' | 'logs' }
+  | { type: 'update'; action: 'check' | 'install' };
 
 type Send = (message: unknown) => boolean;
 

@@ -54,5 +54,8 @@
       "owner": "jh10050730",
       "repo": "DevMataAI"
     }
+  },
+  "dependencies": {
+    "electron-updater": "6.8.11"
   }
 }

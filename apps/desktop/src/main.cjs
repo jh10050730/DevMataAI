@@ -2,9 +2,10 @@
 const { app, BrowserWindow, Menu, Tray, dialog, nativeImage, shell } = require('electron');
 const { join } = require('node:path');
 const { loadConfig } = require('./config.cjs');
-const { appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, resetRoute } = require('./paths.cjs');
+const { appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, resetRoute, updateAction } = require('./paths.cjs');
 const { startApi } = require('./server.cjs');
 const { trayIcon, windowIcon } = require('./icon.cjs');
+const { createUpdater } = require('./updater.cjs');
 
 const APP_NAME = 'DevMata AI';
 app.setName(APP_NAME);
@@ -16,6 +17,8 @@ let win = null;
 let tray = null;
 let api = null;
 let quitting = false;
+let updater = null;
+let refreshTray = () => {};
 const startHidden = process.argv.includes('--hidden');
 
 if (!app.requestSingleInstanceLock()) {
@@ -52,8 +55,12 @@ async function start() {
     const reset = resetRoute(message);
     if (reset) { void confirmLocalReset(reset); return; }
     const folder = folderTarget(message);
-    if (folder) void shell.openPath(folder === 'logs' ? join(dataDir, 'logs') : dataDir);
+    if (folder) { void shell.openPath(folder === 'logs' ? join(dataDir, 'logs') : dataDir); return; }
+    const update = updateAction(message);
+    if (update === 'check') updater?.check();
+    if (update === 'install') installUpdate();
   });
+  startUpdater();
   app.devmataUrl = `http://localhost:${config.port}/`;
   app.devmataPort = config.port;
   if (win) await win.loadURL(app.devmataUrl);
@@ -110,6 +117,34 @@ function openInApp(route) {
   win.setAlwaysOnTop(false);
 }
 
+/** 설치본에서만 자동 업데이트. 상태가 바뀌면 API(화면)와 트레이 메뉴에 알린다 */
+function startUpdater() {
+  if (!app.isPackaged) return;
+  const { autoUpdater } = require('electron-updater');
+  updater = createUpdater({
+    autoUpdater,
+    onState: state => {
+      if (api?.connected) api.send({ type: 'update-state', ...state });
+      refreshTray();
+    },
+  });
+  if (api?.connected) api.send({ type: 'update-state', ...updater.state });
+  updater.schedule();
+}
+
+function installUpdate() {
+  updater?.install(() => { quitting = true; });
+}
+
+function updateMenuItem() {
+  const s = updater?.state;
+  if (!s) return [];
+  if (s.state === 'ready') return [{ label: `재시작해서 업데이트 (v${s.version})`, click: installUpdate }, { type: 'separator' }];
+  const busy = ['checking', 'available', 'downloading'].includes(s.state);
+  const label = s.state === 'downloading' ? `업데이트 받는 중… ${s.percent ?? 0}%` : busy ? '업데이트 확인 중…' : '업데이트 확인';
+  return [{ label, enabled: !busy, click: () => updater.check() }, { type: 'separator' }];
+}
+
 function createTray() {
   tray = new Tray(trayIcon());
   tray.setToolTip(APP_NAME);
@@ -124,8 +159,10 @@ function createTray() {
       click: item => { app.setLoginItemSettings({ openAtLogin: item.checked, args: ['--hidden'] }); refresh(); },
     },
     { type: 'separator' },
+    ...updateMenuItem(),
     { label: '종료', click: () => { quitting = true; app.quit(); } },
   ]));
+  refreshTray = refresh;
   refresh();
 }
 

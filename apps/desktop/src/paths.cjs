@@ -95,9 +95,15 @@ function folderTarget(message) {
   return ['data', 'logs'].includes(message.target) ? message.target : null;
 }
 
+/** API 가 보낸 "업데이트" 요청. check·install 만 허용, 아니면 null */
+function updateAction(message) {
+  if (!message || message.type !== 'update') return null;
+  return ['check', 'install'].includes(message.action) ? message.action : null;
+}
+
 /** 기본 브라우저로 열어도 되는 주소 (http/https 만) */
 function isExternalUrl(url) {
   try { return ['http:', 'https:'].includes(new URL(url).protocol); } catch { return false; }
 }
 
-module.exports = { APP_DEFAULT_KEYS, appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, resetRoute };
+module.exports = { APP_DEFAULT_KEYS, appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, resetRoute, updateAction };

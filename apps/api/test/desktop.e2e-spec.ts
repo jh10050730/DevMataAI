@@ -36,6 +36,15 @@ describe('앱 정보 (GET /api/desktop/info, POST /api/desktop/open)', () => {
     expect(body).toEqual({ desktop: true, version: '1.2.3', dataDir: 'C:\\Users\\me\\AppData\\Roaming\\DevMata AI', logDir: 'C:\\Users\\me\\AppData\\Roaming\\DevMata AI\\logs' });
   });
 
+  it('업데이트 요청: 로그인 필요, check·install 만, 웹 실행 404, 받아 둔 것 없이 설치 409', async () => {
+    await api().post('/api/desktop/update').send({ action: 'check' }).expect(401);
+    process.env.DEVMATA_DESKTOP = '1';
+    await api().post('/api/desktop/update').set(auth).send({ action: 'download-anything' }).expect(400);
+    await api().post('/api/desktop/update').set(auth).send({ action: 'install' }).expect(409);
+    delete process.env.DEVMATA_DESKTOP;
+    await api().post('/api/desktop/update').set(auth).send({ action: 'check' }).expect(404);
+  });
+
   it('폴더 열기: 정해진 대상만, 웹 실행에서는 404, 관리자가 아니면 403', async () => {
     await api().post('/api/desktop/open').send({ target: 'data' }).expect(401);
     process.env.DEVMATA_DESKTOP = '1';

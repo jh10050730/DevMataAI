@@ -101,7 +101,7 @@ POST /api/desktop/update  { action: "check" | "install" } → 202 (install 은 �
 | C1 | 설치 파일 다시 빌드 (새 Desktop 클라이언트·PKCE·앱 복귀 반영), 설치본 실제 실행 점검: 창·트레이·작업 관리자 이름·Windows 시작 시 자동 실행 메뉴·제거 후 데이터 유지 |
 | C2 | 예전 자동 실행 정리: `Startup\DevMata AI.lnk`(serve.mjs, 5173/3000) 제거 → 설치본의 자동 실행으로 대체. `start.bat`·`serve.mjs` 는 개발용으로 남기고 안내 갱신. OneDrive 안 빌드 찌꺼기(`apps/desktop/release`) 삭제 |
 | C3 | GitHub Actions: push/PR → 타입 검사·전체 테스트, `v*` 태그 → windows 에서 설치 파일 빌드 후 Releases 업로드 (`GITHUB_TOKEN`, Google 키는 Secrets) → **완료** (`.github/workflows/ci.yml`, `release.yml`. Secrets 는 U5) |
-| C4 | 자동 업데이트 (electron-updater + GitHub Releases): 시작 시·6시간마다 확인, 내려받으면 트레이·화면에 "재시작해서 업데이트". `POST /api/desktop/update` |
+| C4 | 자동 업데이트 (electron-updater + GitHub Releases): 시작 시·6시간마다 확인, 내려받으면 트레이·화면에 "재시작해서 업데이트". `POST /api/desktop/update` → **완료** (`apps/desktop/src/updater.cjs`, 화면은 도움말 → 앱 정보. 첫 자동 업데이트는 이 기능이 들어간 버전을 한 번 손으로 설치한 뒤부터) |
 | C5 | `GET /api/desktop/info`, `POST /api/desktop/open` (버전·데이터 폴더·로그 폴더) — 위 인터페이스 약속대로 → **완료** (`apps/api/src/desktop`, 화면은 도움말 → 앱 정보. `update` 는 C4 에서) |
 | C6 | 설치본 자동 백업: 하루 한 번 `%APPDATA%\DevMata AI\backups` 에 `VACUUM INTO`, 최근 7개 보관. 복원 방법 안내 → **완료** (`apps/api/src/backup`, `DB_BACKUP_DIR`·`DB_BACKUP_KEEP`, 복원은 도움말 FAQ) |
 | C7 | 로그 크기 제한 (`logs/api.log` 5MB 넘으면 교체, 3개 보관) → **완료** (`server.cjs` rotateLog) |

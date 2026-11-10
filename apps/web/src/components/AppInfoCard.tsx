@@ -1,15 +1,23 @@
-import { FolderOpen, Info } from 'lucide-react';
-import { useState } from 'react';
+import { Download, FolderOpen, Info, RefreshCw } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { api, errorMessage } from '../lib/api';
 import { useAsync } from '../lib/useAsync';
 import { Button } from './ui';
 
 /** GET /api/desktop/info (docs/DESKTOP_PLAN.md 인터페이스 약속) */
+export interface UpdateState {
+  state: 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'error';
+  version?: string;
+  percent?: number;
+  error?: string;
+}
+
 export interface DesktopInfo {
   desktop: boolean;
   version: string;
   dataDir?: string;
   logDir?: string;
+  update?: UpdateState;
 }
 
 export type FolderTarget = 'data' | 'logs';
@@ -24,15 +32,36 @@ export function folderRows(info: DesktopInfo): { target: FolderTarget; label: st
   return rows.filter((row): row is { target: FolderTarget; label: string; path: string } => !!row.path);
 }
 
-/** 도움말 → 앱 정보: 버전과 (데스크톱 앱이면) 데이터·로그 폴더 열기 */
-export default function AppInfoCard() {
-  const { data } = useAsync(() => api.get<DesktopInfo>('/desktop/info'), []);
-  const [busy, setBusy] = useState<FolderTarget | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+/** 업데이트 상태 문구와 누를 수 있는 동작. 진행 중이면 동작 없음(화면이 잠깐마다 다시 확인) */
+export function updateView(update: UpdateState): { text: string; action: 'check' | 'install' | null; working: boolean } {
+  const v = update.version ? `v${update.version}` : '새 버전';
+  switch (update.state) {
+    case 'checking': return { text: '새 버전을 확인하는 중…', action: null, working: true };
+    case 'available': return { text: `${v}을 받기 시작했어요…`, action: null, working: true };
+    case 'downloading': return { text: `${v} 받는 중… ${update.percent ?? 0}%`, action: null, working: true };
+    case 'ready': return { text: `${v} 준비 완료. 재시작하면 바로 설치돼요 (앱을 끌 때도 설치돼요).`, action: 'install', working: false };
+    case 'error': return { text: update.error || '업데이트를 확인하지 못했어요.', action: 'check', working: false };
+    default: return { text: '최신 버전이에요. 새 버전은 6시간마다 자동으로 확인해요.', action: 'check', working: false };
+  }
+}
 
-  const open = async (target: FolderTarget) => {
-    setBusy(target); setMessage(null);
-    try { await api.post('/desktop/open', { target }); }
+/** 도움말 → 앱 정보: 버전, 업데이트, (데스크톱 앱이면) 데이터·로그 폴더 열기 */
+export default function AppInfoCard() {
+  const { data, reload } = useAsync(() => api.get<DesktopInfo>('/desktop/info'), []);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const view = data?.update ? updateView(data.update) : null;
+
+  // 확인·다운로드가 진행 중이면 2초마다 상태를 다시 읽는다.
+  useEffect(() => {
+    if (!view?.working) return;
+    const id = window.setInterval(() => void reload(), 2000);
+    return () => window.clearInterval(id);
+  }, [view?.working, reload]);
+
+  const run = async (key: string, call: () => Promise<unknown>) => {
+    setBusy(key); setMessage(null);
+    try { await call(); await reload(); }
     catch (e) { setMessage(errorMessage(e)); }
     finally { setBusy(null); }
   };
@@ -48,11 +77,27 @@ export default function AppInfoCard() {
           <dt className="w-40 shrink-0 text-muted">버전</dt>
           <dd className="font-semibold">{data ? `v${data.version}` : '…'}{data && !data.desktop && <span className="ml-2 font-normal text-muted">(개발용 웹 실행)</span>}</dd>
         </div>
+        {view && data?.update && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <dt className="w-40 shrink-0 text-muted">업데이트</dt>
+            <dd className={`min-w-0 flex-1 ${data.update.state === 'error' ? 'text-red-500' : data.update.state === 'ready' ? 'font-semibold text-accent' : ''}`}>{view.text}</dd>
+            {view.action === 'check' && (
+              <Button variant="secondary" className="px-3 py-1.5 text-xs" loading={busy === 'check'} onClick={() => void run('check', () => api.post('/desktop/update', { action: 'check' }))}>
+                <RefreshCw className="size-3.5" /> 업데이트 확인
+              </Button>
+            )}
+            {view.action === 'install' && (
+              <Button className="px-3 py-1.5 text-xs" loading={busy === 'install'} onClick={() => void run('install', () => api.post('/desktop/update', { action: 'install' }))}>
+                <Download className="size-3.5" /> 재시작해서 업데이트
+              </Button>
+            )}
+          </div>
+        )}
         {data && folderRows(data).map(row => (
           <div key={row.target} className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <dt className="w-40 shrink-0 text-muted">{row.label}</dt>
             <dd className="min-w-0 flex-1 break-all font-mono text-xs">{row.path}</dd>
-            <Button variant="secondary" className="px-3 py-1.5 text-xs" loading={busy === row.target} onClick={() => void open(row.target)}>
+            <Button variant="secondary" className="px-3 py-1.5 text-xs" loading={busy === row.target} onClick={() => void run(row.target, () => api.post('/desktop/open', { target: row.target }))}>
               <FolderOpen className="size-3.5" /> 열기
             </Button>
           </div>

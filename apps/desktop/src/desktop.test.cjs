@@ -148,3 +148,12 @@ test('folder open requests only name a known folder; the app decides the path', 
   assert.equal(folderTarget({ type: 'open-app', target: 'data' }), null);
   assert.equal(folderTarget(null), null);
 });
+
+test('update requests are only check or install', () => {
+  const { updateAction } = require('./paths.cjs');
+  assert.equal(updateAction({ type: 'update', action: 'check' }), 'check');
+  assert.equal(updateAction({ type: 'update', action: 'install' }), 'install');
+  assert.equal(updateAction({ type: 'update', action: 'rm -rf' }), null);
+  assert.equal(updateAction({ type: 'open-folder', action: 'check' }), null);
+  assert.equal(updateAction(undefined), null);
+});
