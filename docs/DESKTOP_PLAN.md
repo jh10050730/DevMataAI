@@ -86,11 +86,11 @@ POST /api/desktop/update  { action: "check" | "install" } → 202 (install 은 �
 
 | # | 할 일 | 언제 |
 |---|---|---|
-| U1 | 로컬 커밋 푸시 허락 (로고·설치 파일·Google PKCE·앱 복귀 등) | 지금 |
+| U1 | 로컬 커밋 푸시 허락 (로고·설치 파일·Google PKCE·앱 복귀 등) | **완료** (2026-11-10 허락, 푸시함) |
 | U2 | 앱에서 Google **지금 동기화** 눌러 일정이 들어오는지 확인 | 지금 |
 | U3 | 새 설치 파일을 직접 설치해 확인 (개발용 앱은 트레이 → 종료 후) | C1 후 |
 | U4 | 기존 '웹 애플리케이션' OAuth 클라이언트 삭제 (Desktop 클라이언트로 잘 되면) | U3 후 |
-| U5 | GitHub 저장소 Settings → Secrets 에 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` 등록 (CI 가 설치 파일을 만들 때 씀) | C3 때 |
+| U5 | GitHub 저장소 Settings → Secrets 에 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` 등록 (CI 가 설치 파일을 만들 때 씀). 터미널: `gh secret set GOOGLE_CLIENT_ID` 실행 후 값 붙여넣기, `GOOGLE_CLIENT_SECRET` 도 같게 (값은 `apps/api/.env`) | 첫 배포 전 |
 | U6 | (선택) Google 앱 검수 신청 → "확인되지 않은 앱" 경고 제거. 본인 소유 도메인 확인 필요 (GitHub Pages 가능) | 나중 |
 | U7 | (선택) 코드 서명 인증서 → SmartScreen 경고 제거. 유료 | 나중 |
 
