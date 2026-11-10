@@ -5,3 +5,4 @@ process.env.DATABASE_URL = testDatabaseUrl();
 process.env.JWT_SECRET = 'test-secret-that-is-at-least-32-characters-long';
 process.env.AI_PROVIDER = 'demo';
 process.env.NOTION_TOKEN = ''; // 테스트에서 실제 Notion 호출 금지
+process.env.SMTP_HOST = ''; // 테스트에서 실제 이메일 발송 금지

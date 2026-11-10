@@ -18,9 +18,11 @@ import { StudyToolsModule } from './study-tools/study-tools.module';
 import { ProjectsModule } from './projects/projects.module';
 import { AssistantModule } from './assistant/assistant.module';
 import { DemoModule } from './demo/demo.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
+    NotificationsModule,
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     PrismaModule,
     AuthModule,

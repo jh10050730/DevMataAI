@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from '../users/users.service';
@@ -14,6 +14,7 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
+    if (Buffer.byteLength(dto.password, 'utf8') > 72) throw new BadRequestException('비밀번호는 UTF-8 기준 72바이트 이하여야 합니다.');
     const existing = await this.users.findByEmail(dto.email);
     if (existing) throw new ConflictException('이미 가입된 이메일입니다.');
 
@@ -30,8 +31,8 @@ export class AuthService {
     return this.issueToken(user);
   }
 
-  private async issueToken(user: { id: string; email: string; name: string; createdAt: Date }) {
-    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email });
+  private async issueToken(user: { id: string; email: string; name: string; createdAt: Date; sessionVersion: number }) {
+    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, version: user.sessionVersion });
     return { accessToken, user: UsersService.toPublic(user) };
   }
 }

@@ -7,6 +7,7 @@ import { IS_PUBLIC_KEY } from './public.decorator';
 interface JwtPayload {
   sub: string;
   email: string;
+  version?: number;
 }
 
 @Injectable()
@@ -41,9 +42,10 @@ export class JwtAuthGuard implements CanActivate {
     // 삭제된 사용자의 토큰 차단
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, email: true },
+      select: { id: true, email: true, sessionVersion: true },
     });
     if (!user) throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
+    if ((payload.version ?? 0) !== user.sessionVersion) throw new UnauthorizedException('비밀번호가 변경되었습니다. 다시 로그인해 주세요.');
 
     request.user = user;
     return true;

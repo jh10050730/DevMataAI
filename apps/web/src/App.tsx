@@ -11,6 +11,7 @@ import SettingsPage from './pages/SettingsPage';
 import NewsPage from './pages/NewsPage';
 import StudyPage from './pages/StudyPage';
 import ProjectsPage from './pages/ProjectsPage';
+import PasswordResetPage from './pages/PasswordResetPage';
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -25,6 +26,8 @@ export default function App() {
 
   return (
     <Routes>
+      <Route path="/forgot-password" element={<PasswordResetPage key="request" mode="request" />} />
+      <Route path="/reset-password" element={<PasswordResetPage key="reset" mode="reset" />} />
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <AuthPage mode="login" />} />
       <Route path="/register" element={user ? <Navigate to="/" replace /> : <AuthPage mode="register" />} />
       <Route

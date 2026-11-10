@@ -38,6 +38,11 @@ model User {
   email        String   @unique @db.VarChar(254)
   name         String   @db.VarChar(100)
   passwordHash String
+  sessionVersion Int @default(0)
+  resetTokenHash String? @unique @db.VarChar(64)
+  resetTokenExpiresAt DateTime?
+  notificationInApp Boolean @default(true)
+  notificationEmail Boolean @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -49,6 +54,27 @@ model User {
   studyNotes    StudyNote[]
   projects      Project[]
   assistantActions AssistantAction[]
+  notifications Notification[]
+}
+
+model Notification {
+  id String @id @default(cuid())
+  userId String
+  targetType String @db.VarChar(16)
+  targetId String
+  deadlineAt DateTime
+  milestone String @db.VarChar(20)
+  title String @db.VarChar(300)
+  body String @db.VarChar(1000)
+  href String @db.VarChar(100)
+  readAt DateTime?
+  createdAt DateTime @default(now())
+  emailSentAt DateTime?
+  emailAttempts Int @default(0)
+  nextEmailAttemptAt DateTime?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([targetType, targetId, deadlineAt, milestone])
+  @@index([userId, createdAt])
 }
 
 /// 할 일. priority: LOW | MEDIUM | HIGH | URGENT, category: GENERAL | STUDY | DEV | SCHOOL | PERSONAL

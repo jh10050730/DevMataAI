@@ -4,6 +4,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { cn } from './ui';
+import NotificationBell from './NotificationBell';
 
 const NAV = [
   { to: '/', label: '홈', icon: House, group: '나의 하루' },
@@ -17,9 +18,9 @@ const NAV = [
 
 function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   return <nav aria-label="주 메뉴" className="flex h-full flex-col overflow-y-auto px-4 pb-6 pt-8 text-sidebar-text">
-    <NavLink to="/" onClick={onNavigate} className="mb-10 flex items-center gap-2.5 px-4" aria-label="DevMate 홈">
+    <NavLink to="/" onClick={onNavigate} className="mb-10 flex items-center gap-2.5 px-4" aria-label="DevMata 홈">
       <div className="flex size-9 items-center justify-center rounded-xl bg-accent-strong"><Layers3 className="size-5 text-white" strokeWidth={2.2} /></div>
-      <span className="text-[23px] font-bold tracking-tight text-fg">devmate</span>
+      <span className="text-[23px] font-bold tracking-tight text-fg">DevMata</span>
     </NavLink>
     <div className="space-y-7">
       {['나의 하루', '기록과 발견'].map(group => <div key={group}>
@@ -101,6 +102,7 @@ export default function Layout() {
           </div>
         </form>
         <button onClick={() => navigate('/assistant')} aria-label="통합 검색으로 이동" className="ml-auto rounded-xl p-2.5 text-muted hover:bg-surface-2 md:hidden"><Search className="size-[18px]" /></button>
+        <NotificationBell />
         <button onClick={toggle} className="rounded-xl p-2.5 text-muted hover:bg-surface-2 hover:text-accent" aria-label={theme === 'dark' ? '밝은 테마로 전환' : '어두운 테마로 전환'} title={theme === 'dark' ? '밝은 테마' : '어두운 테마'}>{theme === 'dark' ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />}</button>
         <div ref={userMenu} className="relative ml-1">
           <button onClick={() => setMenuOpen(open => !open)} className="flex items-center gap-2 rounded-xl p-1 text-sm" aria-label="사용자 메뉴" aria-expanded={menuOpen}>

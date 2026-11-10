@@ -4,10 +4,13 @@ import { JwtModule } from '@nestjs/jwt';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { PasswordResetService } from './password-reset.service';
+import { MailModule } from '../mail/mail.module';
 
 @Global()
 @Module({
   imports: [
+    MailModule,
     UsersModule,
     JwtModule.registerAsync({
       global: true,
@@ -19,6 +22,6 @@ import { AuthService } from './auth.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, PasswordResetService],
 })
 export class AuthModule {}

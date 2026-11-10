@@ -2,6 +2,7 @@ import { Moon, Sun, User as UserIcon } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import DemoDataCard from '../components/DemoDataCard';
 import IntegrationsCard from '../components/IntegrationsCard';
+import NotificationSettingsCard from '../components/NotificationSettingsCard';
 import { Button, Card, Field, Input } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -62,6 +63,7 @@ export default function SettingsPage() {
       </Card>
 
       <IntegrationsCard />
+      <NotificationSettingsCard />
 
       <DemoDataCard />
     </div>
