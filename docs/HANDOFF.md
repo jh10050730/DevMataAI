@@ -1,5 +1,13 @@
 # 다음 작업을 위한 인수인계
 
+## 2026-11-10 2단계 기반 준비 (Codex)
+
+- `apps/api/src/app-settings/settings-schema.ts`: Google·Notion·GitHub·SMTP·Claude 설정 목록, 비밀값 구분, 허용 키·포트·이메일·콜백 URL·모델 검증. 현재 실제 구현된 AI 제공자 claude-cli/demo만 선택 허용.
+- `settings-values.ts`: 기존 google-crypto AES-GCM 재사용, AppSetting 우선·환경변수 대체 규칙, 비밀값 비노출 조회 메타데이터. null은 앱 설정 삭제 후 환경변수로 복귀, 빈 문자열은 환경변수를 덮어쓰는 명시적 비활성 값으로 설계. UI의 비밀번호 빈칸은 저장 요청에서 생략하도록 후속 구현 필요.
+- 독립 단위 테스트 12개와 API 타입 검사 통과. DB·패키지·공용 테스트 기반은 수정하지 않음.
+- **미완료**: 관리자(최초 가입 사용자) 권한 검사, DB 저장 API, 설정 화면, 서비스별 동적 설정 조회. 계획서가 요구하는 AppSetting 포함 1단계 커밋이 아직 없어 통합 작업 대기 중.
+- 계획서 요청 표에 선행 커밋과 파일 경계 밖 app.module.ts 모듈 등록 요청을 남김. 새 AppSettingsModule/Service 자체는 아직 만들지 않았으므로 지금 등록하지 말 것.
+
 ## 2026-11-10 데스크톱 전환 4단계 (Codex)
 
 - `docs/DESKTOP_PLAN.md` 파일 경계를 준수해 `apps/api/src/ai/**`, 웹 화면과 공동 문서만 수정. 패키지 설치·DB·테스트 기반·운영 스크립트 변경 없음.
