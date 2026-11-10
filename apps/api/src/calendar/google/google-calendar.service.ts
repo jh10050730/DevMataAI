@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { decryptToken, encryptToken, pkceChallenge, pkceVerifier, signState, verifyState } from './google-crypto';
+import { isDesktop } from './desktop-return';
 
 const PROVIDER = 'GOOGLE_CALENDAR';
 const SOURCE = 'GOOGLE';
@@ -121,6 +122,8 @@ export class GoogleCalendarService {
       syncedEvents: count,
       readOnly: true,
       redirectUri: this.redirectUri,
+      desktop: isDesktop(),
+      syncWindow: { pastDays: SYNC_PAST_DAYS, futureDays: SYNC_FUTURE_DAYS },
     };
   }
 

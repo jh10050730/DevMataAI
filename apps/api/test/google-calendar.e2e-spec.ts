@@ -59,7 +59,7 @@ describe('Google Calendar (e2e)', () => {
 
   it('연결 전: 상태는 미연결, 동기화는 안내와 함께 400', async () => {
     const s = await api().get('/api/google/status').set(auth()).expect(200);
-    expect(s.body).toMatchObject({ configured: true, connected: false, readOnly: true });
+    expect(s.body).toMatchObject({ configured: true, connected: false, readOnly: true, desktop: false, syncWindow: { pastDays: 30, futureDays: 180 } });
     const sync = await api().post('/api/google/sync').set(auth()).expect(400);
     expect(sync.body.message).toContain('연결되지 않았습니다');
   });
@@ -72,6 +72,9 @@ describe('Google Calendar (e2e)', () => {
     expect(url.searchParams.get('scope')).not.toMatch(/auth\/calendar(\s|$)|calendar\.events(?!\.readonly)/);
     expect(url.searchParams.get('access_type')).toBe('offline');
     expect(url.searchParams.get('state')).toBeTruthy();
+    // PKCE: S256 방식의 43자 base64url challenge
+    expect(url.searchParams.get('code_challenge_method')).toBe('S256');
+    expect(url.searchParams.get('code_challenge')).toMatch(/^[A-Za-z0-9_-]{43}$/);
   });
 
   it('callback: 위조/누락 state 는 연결하지 않고 오류로 리디렉션', async () => {

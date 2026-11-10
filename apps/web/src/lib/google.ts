@@ -9,6 +9,10 @@ export interface GoogleStatus {
   syncedEvents: number;
   readOnly: boolean;
   redirectUri: string;
+  /** 데스크톱 앱에서 실행 중 (Google 로그인은 기본 브라우저에서 하고 앱으로 돌아온다) */
+  desktop?: boolean;
+  /** 가져오는 기간 */
+  syncWindow?: { pastDays: number; futureDays: number };
 }
 
 export interface GoogleSyncResult {
