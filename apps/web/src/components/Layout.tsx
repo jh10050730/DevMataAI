@@ -14,6 +14,7 @@ const NAV = [
   { to: '/news', label: '뉴스 브리핑', icon: Newspaper, group: '기록과 발견' },
   { to: '/projects', label: '프로젝트', icon: FolderGit2, group: '기록과 발견' },
   { to: '/settings', label: '설정', icon: Settings, group: '설정' },
+  { to: '/help', label: '도움말', icon: LifeBuoy, group: '설정' },
 ];
 
 function Sidebar({ onNavigate }: { onNavigate?: () => void }) {

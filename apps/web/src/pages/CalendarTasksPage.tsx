@@ -61,15 +61,17 @@ export default function CalendarTasksPage() {
                 </button>
               ))}
             </div>
-            <Button variant="secondary" onClick={goToday} className="px-2.5 py-1 text-xs">
-              오늘
-            </Button>
-            <button onClick={() => move(-1)} className="rounded-md p-1.5 text-muted hover:bg-surface-2" aria-label="이전">
-              <ChevronLeft className="size-4" />
-            </button>
-            <button onClick={() => move(1)} className="rounded-md p-1.5 text-muted hover:bg-surface-2" aria-label="다음">
-              <ChevronRight className="size-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <Button variant="secondary" onClick={goToday} className="px-2.5 py-1 text-xs">
+                오늘
+              </Button>
+              <button onClick={() => move(-1)} className="rounded-md p-1.5 text-muted hover:bg-surface-2" aria-label="이전">
+                <ChevronLeft className="size-4" />
+              </button>
+              <button onClick={() => move(1)} className="rounded-md p-1.5 text-muted hover:bg-surface-2" aria-label="다음">
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
           </div>
 
           {events.error ? (
