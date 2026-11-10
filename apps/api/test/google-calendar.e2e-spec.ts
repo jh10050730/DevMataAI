@@ -85,6 +85,34 @@ describe('Google Calendar (e2e)', () => {
     expect(s.body.connected).toBe(false);
   });
 
+  it('callback (데스크톱 앱): 앱에 알리면 브라우저에는 안내 페이지, 앱과 연결이 없으면 리디렉션', async () => {
+    const previousDesktop = process.env.DEVMATA_DESKTOP;
+    const previousSend = process.send;
+    const sent: unknown[] = [];
+    process.env.DEVMATA_DESKTOP = '1';
+    process.send = ((message: unknown) => { sent.push(message); return true; }) as typeof process.send;
+    try {
+      const page = await api().get('/api/google/callback').query({ error: 'access_denied' }).expect(200);
+      expect(page.headers['content-type']).toMatch(/text\/html/);
+      expect(page.text).toContain('Google 캘린더 연결 실패');
+      expect(page.text).toContain('Google 연결을 취소했습니다.');
+      expect(sent).toEqual([{ type: 'open-app', path: expect.stringMatching(/^\/settings\?google=error&reason=/) }]);
+
+      // Google 이 돌려준 오류 문구는 HTML 로 해석되지 않게 바꿔서 보여 준다
+      const evil = await api().get('/api/google/callback').query({ error: '<img src=x onerror=alert(1)>' }).expect(200);
+      expect(evil.text).not.toContain('<img src=x');
+      expect(evil.text).toContain('&lt;img src=x onerror=alert(1)&gt;');
+
+      // 앱과의 연결(IPC)이 없으면 예전처럼 웹 화면으로 리디렉션
+      process.send = undefined;
+      const res = await api().get('/api/google/callback').query({ error: 'access_denied' }).expect(302);
+      expect(res.headers.location).toContain('/settings?google=error');
+    } finally {
+      process.send = previousSend;
+      if (previousDesktop === undefined) delete process.env.DEVMATA_DESKTOP; else process.env.DEVMATA_DESKTOP = previousDesktop;
+    }
+  });
+
   it('callback: 올바른 state → 토큰을 암호화해 저장하고 설정 화면으로', async () => {
     const state = signState(userId, process.env.JWT_SECRET!);
     const res = await api().get('/api/google/callback').query({ code: 'auth-code', state }).expect(302);

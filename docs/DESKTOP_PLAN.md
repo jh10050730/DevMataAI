@@ -122,7 +122,7 @@ POST /api/desktop/update  { action: "check" | "install" } → 202 (install 은 �
 | X8 | API 연결이 끊겼을 때(앱 서버 재시작 중 등) 화면: 재시도 안내, 무한 로딩 방지 |
 | X9 | 작은 창(최소 380px)·큰 글꼴(Windows 배율 150%)에서 레이아웃 점검, 사이드바 접힘 |
 | X10 | 비밀번호 재설정: 데스크톱에서 메일 설정이 없으면 "메일 없이 재설정" 대안(관리자가 재설정 또는 안내)으로, 메일 의존 화면 정리 |
-| X11 | 테스트 보강: Google 콜백 데스크톱 모드 e2e (`DEVMATA_DESKTOP=1` → HTML 안내, IPC 없으면 리디렉션), 설정 화면 vitest (Google 결과 표시·관리자 전용 항목) |
+| X11 | 테스트 보강: Google 콜백 데스크톱 모드 e2e (`DEVMATA_DESKTOP=1` → HTML 안내, IPC 없으면 리디렉션), 설정 화면 vitest (Google 결과 표시·관리자 전용 항목) → 콜백 e2e **완료**(Claude, 오류 문구 HTML 이스케이프 포함). 설정 화면 vitest 는 Codex 가 `SettingsPage` 작업 끝낼 때 함께 |
 | X12 | `docs/HANDOFF.md` 최신화 (데스크톱 앱 기준 구조·실행·빌드·배포 흐름) |
 | X13 | 앱 안 도움말 페이지(또는 설정의 "도움말" 절): README 핵심을 짧게, 문제 해결 링크 |
 
