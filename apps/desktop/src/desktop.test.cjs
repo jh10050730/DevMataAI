@@ -124,3 +124,13 @@ test('Claude Code is found on PATH or in the official install folders', () => {
   assert.equal(norm(findClaude({ PATH: '', USERPROFILE: 'C:/Users/me' }, exists)), 'C:/Users/me/.local/bin/claude.exe');
   assert.equal(findClaude({ PATH: '', USERPROFILE: 'C:/Users/other' }, exists), null);
 });
+
+test('local password reset requests are checked before showing a dialog', () => {
+  const { resetRoute } = require('./paths.cjs');
+  const token = 'a'.repeat(64);
+  assert.deepEqual(resetRoute({ type: 'reset-password', email: 'me@example.com', path: `/reset-password#token=${token}` }), { email: 'me@example.com', path: `/reset-password#token=${token}` });
+  assert.equal(resetRoute({ type: 'reset-password', email: 'me@example.com', path: '/settings' }), null);
+  assert.equal(resetRoute({ type: 'reset-password', email: 'me@example.com', path: `/reset-password#token=${token}&x=1` }), null);
+  assert.equal(resetRoute({ type: 'reset-password', email: 'a\nb', path: `/reset-password#token=${token}` }), null);
+  assert.equal(resetRoute({ type: 'open-app', path: '/settings' }), null);
+});

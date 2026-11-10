@@ -2,7 +2,7 @@
 const { app, BrowserWindow, Menu, Tray, dialog, nativeImage, shell } = require('electron');
 const { join } = require('node:path');
 const { loadConfig } = require('./config.cjs');
-const { appPaths, apiEnv, appRoute, findClaude, loadAppDefaults, isAppUrl, isExternalUrl } = require('./paths.cjs');
+const { appPaths, apiEnv, appRoute, findClaude, loadAppDefaults, isAppUrl, isExternalUrl, resetRoute } = require('./paths.cjs');
 const { startApi } = require('./server.cjs');
 const { trayIcon, windowIcon } = require('./icon.cjs');
 
@@ -46,7 +46,12 @@ async function start() {
   api = await startApi({ paths, env: apiEnv({ dataDir, config, paths, defaults }), port: config.port, logDir: join(dataDir, 'logs') });
   api.on('exit', code => { if (!quitting) fail(new Error(`API 서버가 예기치 않게 종료되었습니다 (코드 ${code}).\n로그: ${join(dataDir, 'logs', 'api.log')}`)); });
   // Google 로그인이 브라우저에서 끝나면 API 가 알려 준다 → 앱 창을 앞으로 가져와 설정 화면(결과 표시)을 연다.
-  api.on('message', message => { const route = appRoute(message); if (route) openInApp(route); });
+  api.on('message', message => {
+    const route = appRoute(message);
+    if (route) { openInApp(route); return; }
+    const reset = resetRoute(message);
+    if (reset) void confirmLocalReset(reset);
+  });
   app.devmataUrl = `http://localhost:${config.port}/`;
   app.devmataPort = config.port;
   if (win) await win.loadURL(app.devmataUrl);
@@ -74,6 +79,21 @@ function createWindow(firstUrl) {
 function showWindow() {
   if (!win) createWindow(app.devmataUrl || loadingPage());
   else { if (win.isMinimized()) win.restore(); win.show(); win.focus(); }
+}
+
+/** 메일 없이 이 PC 에서 비밀번호 재설정: 확인 창에서 "재설정" 을 누르면 재설정 화면을 연다 */
+async function confirmLocalReset({ email, path }) {
+  const options = {
+    type: 'question',
+    buttons: ['재설정', '취소'],
+    defaultId: 0,
+    cancelId: 1,
+    title: `${APP_NAME} 비밀번호 재설정`,
+    message: `${email} 계정의 비밀번호를 이 PC에서 재설정할까요?`,
+    detail: '메일 설정이 없어 이 PC에서 바로 재설정합니다. 직접 요청하지 않았다면 취소를 누르세요. (15분 동안 한 번만 쓸 수 있어요)',
+  };
+  const { response } = win ? await dialog.showMessageBox(win, options) : await dialog.showMessageBox(options);
+  if (response === 0) openInApp(path);
 }
 
 /** 앱 창에서 경로를 열고 맨 앞으로 가져온다. Windows 는 다른 창(브라우저)이 앞에 있으면 포커스를 막으므로 잠깐 맨 위로 올린다. */

@@ -76,9 +76,18 @@ function appRoute(message) {
   return /^\/settings(\?[^\s#]*)?$/.test(message.path) ? message.path : null;
 }
 
+/** API 가 보낸 "이 PC 에서 비밀번호 재설정" 요청. 형식이 맞으면 { email, path }, 아니면 null */
+function resetRoute(message) {
+  if (!message || message.type !== 'reset-password') return null;
+  const { email, path } = message;
+  if (typeof email !== 'string' || email.length > 320 || /[\r\n]/.test(email)) return null;
+  if (typeof path !== 'string' || !/^\/reset-password#token=[a-f0-9]{64}$/.test(path)) return null;
+  return { email, path };
+}
+
 /** 기본 브라우저로 열어도 되는 주소 (http/https 만) */
 function isExternalUrl(url) {
   try { return ['http:', 'https:'].includes(new URL(url).protocol); } catch { return false; }
 }
 
-module.exports = { APP_DEFAULT_KEYS, appPaths, apiEnv, appRoute, findClaude, loadAppDefaults, isAppUrl, isExternalUrl };
+module.exports = { APP_DEFAULT_KEYS, appPaths, apiEnv, appRoute, findClaude, loadAppDefaults, isAppUrl, isExternalUrl, resetRoute };

@@ -5,6 +5,7 @@ import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { MailService } from '../src/mail/mail.service';
+import { PasswordResetService } from '../src/auth/password-reset.service';
 
 describe('password recovery and email validation', () => {
   let app: INestApplication;
@@ -66,5 +67,46 @@ describe('password recovery and email validation', () => {
     mail.configured = true;
     for (let i = 0; i < 3; i++) await api().post('/api/auth/forgot-password').send({ email: 'recovery-limit@gmail.com' }).expect(200);
     await api().post('/api/auth/forgot-password').send({ email: 'recovery-limit@gmail.com' }).expect(429);
+  });
+
+  describe('데스크톱 앱 + 메일 설정 없음: 이 PC 에서 재설정', () => {
+    const previous = process.env.DEVMATA_DESKTOP;
+    afterEach(() => { if (previous === undefined) delete process.env.DEVMATA_DESKTOP; else process.env.DEVMATA_DESKTOP = previous; });
+
+    it('앱에 확인 요청을 보내고, 받은 링크로 비밀번호를 바꿀 수 있음', async () => {
+      const account = await create();
+      const sent: Array<{ type: string; email: string; path: string }> = [];
+      const result = await app.get(PasswordResetService).localReset(account.email, m => { sent.push(m as never); return true; });
+      expect(result).toMatchObject({ local: true });
+      expect(sent).toHaveLength(1);
+      expect(sent[0]).toMatchObject({ type: 'reset-password', email: account.email });
+      expect(sent[0].path).toMatch(/^\/reset-password#token=[a-f0-9]{64}$/);
+      expect(mail.send).not.toHaveBeenCalled();
+      await reset(sent[0].path.split('token=')[1], 'local-new-password').expect(200);
+      await api().post('/api/auth/login').send({ email: account.email, password: 'local-new-password' }).expect(200);
+    });
+
+    it('앱에 알리지 못하면 토큰을 지우고 503, 없는 계정은 400', async () => {
+      const account = await create();
+      await expect(app.get(PasswordResetService).localReset(account.email, () => false)).rejects.toBeInstanceOf(ServiceUnavailableException);
+      const user = await db().user.findUnique({ where: { email: account.email } });
+      expect(user?.resetTokenHash).toBeNull();
+      await expect(app.get(PasswordResetService).localReset('recovery-nobody@gmail.com', () => true)).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('메일 설정이 없으면 forgot-password 가 이 PC 재설정으로 바뀜 (IPC 없는 테스트 환경에서는 503)', async () => {
+      const account = await create();
+      mail.configured = false;
+      process.env.DEVMATA_DESKTOP = '1';
+      // 테스트 실행기 자체가 IPC 를 가질 수 있어 잠깐 없앤다 (실행기에 엉뚱한 메시지를 보내지 않도록)
+      const send = process.send;
+      process.send = undefined;
+      try {
+        await api().post('/api/auth/forgot-password').send({ email: account.email }).expect(503);
+      } finally {
+        process.send = send;
+      }
+      expect(mail.send).not.toHaveBeenCalled();
+    });
   });
 });

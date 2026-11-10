@@ -1,9 +1,10 @@
-import { BadRequestException, HttpException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { createHash, randomBytes } from 'node:crypto';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { ResetPasswordDto } from './auth.dto';
+import { isDesktop, sendToDesktop } from '../common/desktop';
 
 const hash = (token: string) => createHash('sha256').update(token).digest('hex');
 const INVALID = '링크가 만료되었거나 이미 사용되었습니다. 재설정 메일을 다시 요청해 주세요.';
@@ -20,6 +21,8 @@ export class PasswordResetService {
   }
   async request(email: string, ip: string) {
     this.limit('request:' + ip, 30); this.limit('email:' + hash(email), 3);
+    // 데스크톱 앱 + 메일 설정 없음: 이 PC 에서 바로 재설정 (앱이 확인 창을 띄운다)
+    if (!this.mail.configured && isDesktop()) return this.localReset(email);
     this.mail.assertConfigured();
     const url = this.mail.publicUrl('/reset-password');
     const user = await this.db.user.findUnique({ where: { email } });
@@ -37,6 +40,24 @@ export class PasswordResetService {
     }
     return { message: '가입된 이메일이라면 재설정 링크가 발송됩니다. 메일함과 스팸함을 확인해 주세요.' };
   }
+  /**
+   * 데스크톱 앱 전용 재설정. 데이터가 이 PC 에만 있고 같은 Windows 사용자는 DB 파일에도 접근할 수 있으므로
+   * "이 PC 앞에 있는 사람" 을 확인 수단으로 쓴다. 앱이 확인 창을 띄우고, 예를 누르면 재설정 화면을 연다.
+   */
+  async localReset(email: string, send?: Parameters<typeof sendToDesktop>[1]) {
+    const user = await this.db.user.findUnique({ where: { email } });
+    if (!user) throw new BadRequestException('이 PC의 DevMata AI에 이 이메일로 가입한 계정이 없어요.');
+    const token = randomBytes(32).toString('hex');
+    const resetTokenHash = hash(token);
+    await this.db.user.update({ where: { id: user.id }, data: { resetTokenHash, resetTokenExpiresAt: new Date(Date.now() + 15 * 60000) } });
+    const sent = sendToDesktop({ type: 'reset-password', email, path: `/reset-password#token=${token}` }, send);
+    if (!sent) {
+      await this.db.user.updateMany({ where: { id: user.id, resetTokenHash }, data: { resetTokenHash: null, resetTokenExpiresAt: null } });
+      throw new ServiceUnavailableException('앱에 확인 창을 띄우지 못했어요. DevMata AI를 다시 실행한 뒤 시도해 주세요.');
+    }
+    return { message: 'DevMata AI 앱에 뜬 확인 창에서 "재설정"을 누르면 새 비밀번호를 정하는 화면이 열려요.', local: true };
+  }
+
   async reset(dto: ResetPasswordDto, ip: string) {
     this.limit('reset:' + ip, 30);
     if (dto.password !== dto.passwordConfirmation) throw new BadRequestException('비밀번호가 일치하지 않습니다.');

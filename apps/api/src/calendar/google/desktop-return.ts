@@ -4,7 +4,9 @@
  * 웹 실행(개발 서버)에서는 기존처럼 설정 화면으로 리디렉션한다.
  */
 
-export const isDesktop = () => process.env.DEVMATA_DESKTOP === '1';
+import { isDesktop as desktop, sendToDesktop } from '../../common/desktop';
+
+export const isDesktop = desktop;
 
 /** 앱 창이 열 경로. 데스크톱 앱(main.cjs)은 /settings 로 시작하는 경로만 받는다. */
 export function settingsPath(result: string, reason?: string) {
@@ -13,12 +15,7 @@ export function settingsPath(result: string, reason?: string) {
 
 /** Electron 에 창 열기 요청 (API 가 앱 안에서 실행될 때만 IPC 가 있다). 보냈으면 true */
 export function notifyDesktop(path: string, send: ((m: unknown) => boolean) | null = process.send?.bind(process) ?? null) {
-  if (!send) return false;
-  try {
-    return send({ type: 'open-app', path }) !== false;
-  } catch {
-    return false;
-  }
+  return sendToDesktop({ type: 'open-app', path }, send);
 }
 
 const escapeHtml = (s: string) =>
