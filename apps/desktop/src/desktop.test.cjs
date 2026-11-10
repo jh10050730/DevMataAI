@@ -36,6 +36,7 @@ test('paths and API environment for dev and installed layouts', () => {
   assert.equal(env.HOST, '127.0.0.1');
   assert.equal(env.WEB_ORIGIN, 'http://localhost:47390');
   assert.equal(env.DB_AUTO_MIGRATE, 'true');
+  assert.equal(env.DB_BACKUP_DIR, 'C:\\Users\\me\\AppData\\Roaming\\DevMata AI\\backups');
   assert.equal(env.ELECTRON_RUN_AS_NODE, '1');
   assert.equal(env.PATH, 'x');
 });

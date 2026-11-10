@@ -62,6 +62,7 @@ function apiEnv({ dataDir, config, paths, base = process.env, defaults = {} }) {
     DB_MIGRATIONS_DIR: paths.migrations,
     JWT_SECRET: config.jwtSecret,
     DEVMATA_DESKTOP: '1',
+    DB_BACKUP_DIR: join(dataDir, 'backups'),
   };
 }
 

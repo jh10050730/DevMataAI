@@ -57,6 +57,7 @@ export default function HelpPage() {
         <Section icon={Database} title="내 데이터">
           <p>모든 데이터는 이 PC에만 저장돼요: <code className="rounded bg-surface-2 px-1">%APPDATA%\DevMata AI</code></p>
           <p>앱을 지웠다가 다시 설치해도 이 폴더가 남아 있으면 그대로 이어서 쓸 수 있어요.</p>
+          <p>하루에 한 번 같은 폴더의 <code className="rounded bg-surface-2 px-1">backups</code>에 자동으로 백업하고, <b>최근 7개</b>만 남겨요.</p>
         </Section>
       </div>
 
@@ -72,6 +73,14 @@ export default function HelpPage() {
           <Faq q="AI 연결 테스트가 실패해요">AI 계정이 이 PC에 로그인되어 있는지 확인하세요. 방금 설치했다면 트레이에서 DevMata AI를 <b>종료</b>한 뒤 다시 실행해 보세요.</Faq>
           <Faq q="'서버와 연결이 끊겼어요' 띠가 떠요">앱 안의 서버가 잠깐 멈춘 상태예요. 대부분 몇 초 안에 다시 연결돼요. 계속되면 트레이에서 종료 후 다시 실행하세요.</Faq>
           <Faq q="'포트를 다른 프로그램이 쓰고 있습니다'라며 시작이 안 돼요">DevMata AI가 이미 실행 중일 가능성이 커요. 트레이 아이콘을 확인하거나, 작업 관리자에서 DevMata AI를 끝낸 뒤 다시 실행하세요.</Faq>
+          <Faq q="예전 데이터로 되돌리고 싶어요">
+            <ol className="list-decimal space-y-1 pl-5">
+              <li>트레이 아이콘을 오른쪽 클릭하고 <b>종료</b>를 눌러 앱을 완전히 꺼요.</li>
+              <li><code className="rounded bg-surface-2 px-1">%APPDATA%\DevMata AI</code> 폴더를 열고, 지금 쓰는 <b>devmata.db</b>를 다른 이름(예: devmata-old.db)으로 바꿔 둬요. 옆에 있는 devmata.db-wal, devmata.db-shm 파일은 지워요.</li>
+              <li><code className="rounded bg-surface-2 px-1">backups</code> 폴더에서 되돌릴 날짜의 파일(devmata-날짜-시간.db)을 복사해 와서 이름을 <b>devmata.db</b>로 바꿔요.</li>
+              <li>앱을 다시 실행해요.</li>
+            </ol>
+          </Faq>
           <Faq q="비밀번호를 잊었어요">로그인 화면의 <b>비밀번호 찾기</b>에서 이메일을 입력하세요. 메일 설정이 없는 PC에서는 앱에 확인 창이 뜨고, <b>재설정</b>을 누르면 새 비밀번호를 정할 수 있어요.</Faq>
         </div>
       </section>

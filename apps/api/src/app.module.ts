@@ -19,6 +19,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { AssistantModule } from './assistant/assistant.module';
 import { DemoModule } from './demo/demo.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { BackupModule } from './backup/backup.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     ProjectsModule,
     AssistantModule,
     DemoModule,
+    BackupModule,
   ],
   controllers: [HealthController],
   // 모든 API는 기본적으로 로그인 필요. 예외는 @Public()

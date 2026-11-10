@@ -103,7 +103,7 @@ POST /api/desktop/update  { action: "check" | "install" } → 202 (install 은 �
 | C3 | GitHub Actions: push/PR → 타입 검사·전체 테스트, `v*` 태그 → windows 에서 설치 파일 빌드 후 Releases 업로드 (`GITHUB_TOKEN`, Google 키는 Secrets) |
 | C4 | 자동 업데이트 (electron-updater + GitHub Releases): 시작 시·6시간마다 확인, 내려받으면 트레이·화면에 "재시작해서 업데이트". `POST /api/desktop/update` |
 | C5 | `GET /api/desktop/info`, `POST /api/desktop/open` (버전·데이터 폴더·로그 폴더) — 위 인터페이스 약속대로 |
-| C6 | 설치본 자동 백업: 하루 한 번 `%APPDATA%\DevMata AI\backups` 에 `VACUUM INTO`, 최근 7개 보관. 복원 방법 안내 |
+| C6 | 설치본 자동 백업: 하루 한 번 `%APPDATA%\DevMata AI\backups` 에 `VACUUM INTO`, 최근 7개 보관. 복원 방법 안내 → **완료** (`apps/api/src/backup`, `DB_BACKUP_DIR`·`DB_BACKUP_KEEP`, 복원은 도움말 FAQ) |
 | C7 | 로그 크기 제한 (`logs/api.log` 5MB 넘으면 교체, 3개 보관) |
 | C8 | 버전 관리: `npm run release <버전>` → 버전 올리기·태그. 화면 표시 버전과 설치 파일 버전 일치 |
 | C9 | 설치본에서 Claude Code 찾기 점검 (설치본은 PATH 가 다를 수 있음: `%APPDATA%\npm`, `%LOCALAPPDATA%\…` 등) — Codex 의 확인 코드와 함께 |
