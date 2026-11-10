@@ -21,7 +21,7 @@ Node.js·MySQL·`.env` 편집 없이 동작해야 한다.
 | 2 | **설정을 앱 안으로**: `.env` 대신 앱 설정 화면에서 Google·Notion·GitHub·SMTP·AI 모델 입력. 비밀값은 암호화 저장, 읽기 API는 "설정됨" 여부만 반환. `.env` 값이 있으면 기본값으로 사용 | Codex | 1단계의 `AppSetting` 커밋 | 구현 완료 · 관리자 API/화면/동적 설정, 全 테스트 168개 통과 · Electron 화면 검수는 3단계 후 |
 | 3 | **Electron 데스크톱 앱**: `apps/desktop` 패키지, 창·트레이·Windows 로그인 시 자동 실행, 데이터 폴더(`%APPDATA%/DevMata AI`), `JWT_SECRET` 자동 생성, API·웹을 앱 안에서 실행 | Claude | 1단계 | 기본 완료 · `npm run desktop`, 앱 창·트레이·자동 마이그레이션·웹 정적 제공 동작 확인. 정식 아이콘·자동 실행 확인은 5단계(설치본) |
 | 4 | **Claude 연결 안내**: Claude Code 설치 여부·버전 확인 API, 미설치 시 공식 설치 안내, 로그인 확인(기존 연결 테스트 재사용), 첫 실행 온보딩 화면 | Codex | 없음 (바로 시작 가능) | 구현 완료 · 타입/빌드/단위 테스트 통과, Electron 화면 검수는 3단계 후 |
-| 5 | **설치 파일·배포**: electron-builder(NSIS) 설치 파일, GitHub Releases 업로드, 자동 업데이트, 빌드 CI | Claude | 3단계 | 대기 |
+| 5 | **설치 파일·배포**: electron-builder(NSIS) 설치 파일, GitHub Releases 업로드, 자동 업데이트, 빌드 CI | Claude | 3단계 | 진행 중 · 설치 파일 완료(`npm run desktop:dist` → `%LOCALAPPDATA%\DevMataAI-build\release`, 설치본 API·화면·DB 동작 확인). 남음: 설치본 실제 설치·자동 실행 확인, 다른 사용자용 Google 키, 자동 업데이트, GitHub Releases, CI |
 | 6 | **사용자 문서**: README를 "설치 파일 받기 → Claude 연결" 중심으로 재작성, 개발자용 실행 방법은 아래로 | Codex | 5단계 | 대기 |
 
 진행 순서: **1(Claude) ∥ 4(Codex)** → **2(Codex) ∥ 3(Claude)** → **5(Claude)** → **6(Codex)**
