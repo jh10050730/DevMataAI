@@ -86,3 +86,14 @@ test('app defaults fill in Google keys without overriding real settings', () => 
     assert.deepEqual(loadAppDefaults(join(dir, 'none')), {});
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('only settings routes from the API open in the app window', () => {
+  const { appRoute } = require('./paths.cjs');
+  assert.equal(appRoute({ type: 'open-app', path: '/settings?google=connected' }), '/settings?google=connected');
+  assert.equal(appRoute({ type: 'open-app', path: '/settings' }), '/settings');
+  assert.equal(appRoute({ type: 'open-app', path: 'https://evil.example/' }), null);
+  assert.equal(appRoute({ type: 'open-app', path: '//evil.example/settings' }), null);
+  assert.equal(appRoute({ type: 'open-app', path: '/calendar' }), null);
+  assert.equal(appRoute({ type: 'ready', port: 1 }), null);
+  assert.equal(appRoute(null), null);
+});

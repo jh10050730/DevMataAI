@@ -2,7 +2,7 @@
 const { app, BrowserWindow, Menu, Tray, dialog, nativeImage, shell } = require('electron');
 const { join } = require('node:path');
 const { loadConfig } = require('./config.cjs');
-const { appPaths, apiEnv, loadAppDefaults, isAppUrl, isExternalUrl } = require('./paths.cjs');
+const { appPaths, apiEnv, appRoute, loadAppDefaults, isAppUrl, isExternalUrl } = require('./paths.cjs');
 const { startApi } = require('./server.cjs');
 const { trayIcon, windowIcon } = require('./icon.cjs');
 
@@ -41,6 +41,8 @@ async function start() {
   if (!startHidden) createWindow(loadingPage());
   api = await startApi({ paths, env: apiEnv({ dataDir, config, paths, defaults: loadAppDefaults(paths.apiRoot) }), port: config.port, logDir: join(dataDir, 'logs') });
   api.on('exit', code => { if (!quitting) fail(new Error(`API 서버가 예기치 않게 종료되었습니다 (코드 ${code}).\n로그: ${join(dataDir, 'logs', 'api.log')}`)); });
+  // Google 로그인이 브라우저에서 끝나면 API 가 알려 준다 → 앱 창을 앞으로 가져와 설정 화면(결과 표시)을 연다.
+  api.on('message', message => { const route = appRoute(message); if (route) openInApp(route); });
   app.devmataUrl = `http://localhost:${config.port}/`;
   app.devmataPort = config.port;
   if (win) await win.loadURL(app.devmataUrl);
@@ -68,6 +70,18 @@ function createWindow(firstUrl) {
 function showWindow() {
   if (!win) createWindow(app.devmataUrl || loadingPage());
   else { if (win.isMinimized()) win.restore(); win.show(); win.focus(); }
+}
+
+/** 앱 창에서 경로를 열고 맨 앞으로 가져온다. Windows 는 다른 창(브라우저)이 앞에 있으면 포커스를 막으므로 잠깐 맨 위로 올린다. */
+function openInApp(route) {
+  const url = new URL(route.slice(1), app.devmataUrl).toString();
+  if (!win) { createWindow(url); return; }
+  void win.loadURL(url);
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.setAlwaysOnTop(true);
+  win.focus();
+  win.setAlwaysOnTop(false);
 }
 
 function createTray() {

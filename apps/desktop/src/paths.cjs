@@ -50,9 +50,15 @@ function isAppUrl(url, port) {
   try { const u = new URL(url); return u.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(u.hostname) && Number(u.port) === port; } catch { return false; }
 }
 
+/** API 가 보낸 "앱 창에서 열기" 요청의 경로. 설정 화면만 허용, 아니면 null (Google 로그인 후 앱으로 돌아오기) */
+function appRoute(message) {
+  if (!message || message.type !== 'open-app' || typeof message.path !== 'string') return null;
+  return /^\/settings(\?[^\s#]*)?$/.test(message.path) ? message.path : null;
+}
+
 /** 기본 브라우저로 열어도 되는 주소 (http/https 만) */
 function isExternalUrl(url) {
   try { return ['http:', 'https:'].includes(new URL(url).protocol); } catch { return false; }
 }
 
-module.exports = { APP_DEFAULT_KEYS, appPaths, apiEnv, loadAppDefaults, isAppUrl, isExternalUrl };
+module.exports = { APP_DEFAULT_KEYS, appPaths, apiEnv, appRoute, loadAppDefaults, isAppUrl, isExternalUrl };
