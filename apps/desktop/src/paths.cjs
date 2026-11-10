@@ -46,7 +46,7 @@ function findClaude(env = process.env, exists = existsSync) {
 }
 
 /** API 프로세스에 넘길 환경변수. 개발용 .env 보다 우선한다. 앱 기본값은 이미 있는 환경변수를 덮어쓰지 않는다. */
-function apiEnv({ dataDir, config, paths, base = process.env, defaults = {} }) {
+function apiEnv({ dataDir, config, paths, base = process.env, defaults = {}, version = '' }) {
   const origin = `http://localhost:${config.port}`;
   return {
     ...defaults,
@@ -63,6 +63,9 @@ function apiEnv({ dataDir, config, paths, base = process.env, defaults = {} }) {
     JWT_SECRET: config.jwtSecret,
     DEVMATA_DESKTOP: '1',
     DB_BACKUP_DIR: join(dataDir, 'backups'),
+    DEVMATA_DATA_DIR: dataDir,
+    DEVMATA_LOG_DIR: join(dataDir, 'logs'),
+    ...(version ? { DEVMATA_VERSION: version } : {}),
   };
 }
 
@@ -86,9 +89,15 @@ function resetRoute(message) {
   return { email, path };
 }
 
+/** API 가 보낸 "폴더 열기" 요청. 정해진 폴더 이름(data·logs)만 허용, 아니면 null. 실제 경로는 앱이 정한다 */
+function folderTarget(message) {
+  if (!message || message.type !== 'open-folder') return null;
+  return ['data', 'logs'].includes(message.target) ? message.target : null;
+}
+
 /** 기본 브라우저로 열어도 되는 주소 (http/https 만) */
 function isExternalUrl(url) {
   try { return ['http:', 'https:'].includes(new URL(url).protocol); } catch { return false; }
 }
 
-module.exports = { APP_DEFAULT_KEYS, appPaths, apiEnv, appRoute, findClaude, loadAppDefaults, isAppUrl, isExternalUrl, resetRoute };
+module.exports = { APP_DEFAULT_KEYS, appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, resetRoute };

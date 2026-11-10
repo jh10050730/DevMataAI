@@ -1,6 +1,7 @@
 import { ArrowUpRight, Bot, CalendarCheck, Database, LifeBuoy, Plug, ShieldCheck, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
+import AppInfoCard from '../components/AppInfoCard';
 
 const REPO = 'https://github.com/jh10050730/DevMataAI';
 
@@ -84,6 +85,8 @@ export default function HelpPage() {
           <Faq q="비밀번호를 잊었어요">로그인 화면의 <b>비밀번호 찾기</b>에서 이메일을 입력하세요. 메일 설정이 없는 PC에서는 앱에 확인 창이 뜨고, <b>재설정</b>을 누르면 새 비밀번호를 정할 수 있어요.</Faq>
         </div>
       </section>
+
+      <AppInfoCard />
 
       <section className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
         <span className="inline-flex items-center gap-1.5 text-muted"><ShieldCheck className="size-4" /> 더 알아보기</span>

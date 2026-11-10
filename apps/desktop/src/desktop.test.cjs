@@ -39,6 +39,10 @@ test('paths and API environment for dev and installed layouts', () => {
   assert.equal(env.DB_BACKUP_DIR, 'C:\\Users\\me\\AppData\\Roaming\\DevMata AI\\backups');
   assert.equal(env.ELECTRON_RUN_AS_NODE, '1');
   assert.equal(env.PATH, 'x');
+  assert.equal(env.DEVMATA_DATA_DIR, 'C:\\Users\\me\\AppData\\Roaming\\DevMata AI');
+  assert.equal(env.DEVMATA_LOG_DIR, 'C:\\Users\\me\\AppData\\Roaming\\DevMata AI\\logs');
+  assert.equal(env.DEVMATA_VERSION, undefined);
+  assert.equal(apiEnv({ dataDir: 'C:/d', config: { port: 1, jwtSecret: 's' }, paths: installed, base: {}, version: '1.2.3' }).DEVMATA_VERSION, '1.2.3');
 });
 
 test('only the local app origin stays inside the window', () => {
@@ -134,4 +138,13 @@ test('local password reset requests are checked before showing a dialog', () => 
   assert.equal(resetRoute({ type: 'reset-password', email: 'me@example.com', path: `/reset-password#token=${token}&x=1` }), null);
   assert.equal(resetRoute({ type: 'reset-password', email: 'a\nb', path: `/reset-password#token=${token}` }), null);
   assert.equal(resetRoute({ type: 'open-app', path: '/settings' }), null);
+});
+
+test('folder open requests only name a known folder; the app decides the path', () => {
+  const { folderTarget } = require('./paths.cjs');
+  assert.equal(folderTarget({ type: 'open-folder', target: 'data' }), 'data');
+  assert.equal(folderTarget({ type: 'open-folder', target: 'logs' }), 'logs');
+  assert.equal(folderTarget({ type: 'open-folder', target: 'C:/Windows' }), null);
+  assert.equal(folderTarget({ type: 'open-app', target: 'data' }), null);
+  assert.equal(folderTarget(null), null);
 });

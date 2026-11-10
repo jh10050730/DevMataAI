@@ -2,7 +2,7 @@
 const { app, BrowserWindow, Menu, Tray, dialog, nativeImage, shell } = require('electron');
 const { join } = require('node:path');
 const { loadConfig } = require('./config.cjs');
-const { appPaths, apiEnv, appRoute, findClaude, loadAppDefaults, isAppUrl, isExternalUrl, resetRoute } = require('./paths.cjs');
+const { appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, resetRoute } = require('./paths.cjs');
 const { startApi } = require('./server.cjs');
 const { trayIcon, windowIcon } = require('./icon.cjs');
 
@@ -43,14 +43,16 @@ async function start() {
   // 설치본: Claude Code 를 공식 설치 위치에서 찾아 넘긴다 (개발 실행은 apps/api/.env 설정을 그대로 쓴다)
   const claude = app.isPackaged ? findClaude() : null;
   if (claude) defaults.CLAUDE_CLI_PATH = claude;
-  api = await startApi({ paths, env: apiEnv({ dataDir, config, paths, defaults }), port: config.port, logDir: join(dataDir, 'logs') });
+  api = await startApi({ paths, env: apiEnv({ dataDir, config, paths, defaults, version: app.getVersion() }), port: config.port, logDir: join(dataDir, 'logs') });
   api.on('exit', code => { if (!quitting) fail(new Error(`API 서버가 예기치 않게 종료되었습니다 (코드 ${code}).\n로그: ${join(dataDir, 'logs', 'api.log')}`)); });
   // Google 로그인이 브라우저에서 끝나면 API 가 알려 준다 → 앱 창을 앞으로 가져와 설정 화면(결과 표시)을 연다.
   api.on('message', message => {
     const route = appRoute(message);
     if (route) { openInApp(route); return; }
     const reset = resetRoute(message);
-    if (reset) void confirmLocalReset(reset);
+    if (reset) { void confirmLocalReset(reset); return; }
+    const folder = folderTarget(message);
+    if (folder) void shell.openPath(folder === 'logs' ? join(dataDir, 'logs') : dataDir);
   });
   app.devmataUrl = `http://localhost:${config.port}/`;
   app.devmataPort = config.port;
