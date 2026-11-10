@@ -1,5 +1,16 @@
 # 다음 작업을 위한 인수인계
 
+## 2026-11-10 2단계 구현 완료 (Codex, 아래 준비 기록보다 우선)
+
+- 선행 커밋 `169af03`(SQLite/AppSetting) 확인 후 구현. 현재 DB는 SQLite이고 MySQL 설치가 필요 없음. Node 22.13 이상, 개발 DB는 `DATABASE_URL=file:../../../data/devmata.db`(prisma 기준), 테스트 DB는 `apps/api/.test/devmata-test.db`.
+- `GET/PATCH /api/app-settings`: 최초 가입 계정(createdAt, id 순)만 조회·저장. PATCH `{values: {설정키: 문자열|null}}`. 전체 검증 후 트랜잭션 저장, 비밀값 AES-GCM 암호화, GET에서 비밀값/암호문 미노출.
+- 설정 화면 AppSettingsCard: 항목별 설정 여부/출처, 비밀값 교체·비활성·기본값 복귀. 빈 비밀 입력란은 패치에서 생략. 최초 가입자가 아닌 경우 권한 안내 표시.
+- AppSettingsModule은 **AiModule의 imports**로 등록하고 전역 export. app.module.ts를 추가 수정하지 않아 파일 경계 유지. AppSettingsService가 시작/저장 후 유효값을 공유 ConfigService에 반영하므로 기존 연동 서비스와 직접 CLI를 쓰는 뉴스·비서·프로젝트도 새 요청부터 반영. 원래 환경 기본값은 별도 스냅샷으로 보관해 null 삭제 시 복귀.
+- AiService의 제공자/모델/경로도 요청 시 조회. 요청 처리 도중 저장한 설정은 다음 요청부터 사용하는 용도. 관리자가 바꾼 Google OAuth 클라이언트는 재연결 필요.
+- Claude Code 테스트의 제공자 명시 및 child_process mock 수정. 전체 API 148개 + 웹 20개 = 168개 테스트 통과, 타입 검사·빌드 통과. 외부 계정으로 실제 인증/메일 발송은 수행하지 않음. Electron 화면 검수는 3단계 완료 후 필요.
+- README 개발용 MySQL 설치·권한·덤프 안내를 SQLite 생성·VACUUM INTO 백업·서버 종료 후 파일 복원 방식으로 수정. README 설치 파일 중심 전체 재작성은 6단계에서 진행.
+- 다음은 Claude 담당 3단계(Electron). Codex 6단계는 5단계 설치 파일 준비 후 진행. DB/데스크톱/의존성/공용 테스트 기반 변경 없음.
+
 ## 2026-11-10 2단계 기반 준비 (Codex)
 
 - `apps/api/src/app-settings/settings-schema.ts`: Google·Notion·GitHub·SMTP·Claude 설정 목록, 비밀값 구분, 허용 키·포트·이메일·콜백 URL·모델 검증. 현재 실제 구현된 AI 제공자 claude-cli/demo만 선택 허용.

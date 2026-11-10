@@ -18,7 +18,7 @@ Node.js·MySQL·`.env` 편집 없이 동작해야 한다.
 | 단계 | 내용 | 담당 | 선행 조건 | 상태 |
 |---|---|---|---|---|
 | 1 | **SQLite 전환**: Prisma provider sqlite, 마이그레이션 재생성, 테스트 DB를 임시 SQLite 파일로, 백업/복원 검증을 파일 복사 방식으로, 기존 MySQL 데이터 이전 스크립트. **`AppSetting` 테이블 추가**(2단계용) | Claude | 없음 | 완료 · AppSetting 포함, 테스트 139개 중 138개 통과(실패 1개는 아래 요청 참고), 실제 데이터 이전·검증 완료 |
-| 2 | **설정을 앱 안으로**: `.env` 대신 앱 설정 화면에서 Google·Notion·GitHub·SMTP·AI 모델 입력. 비밀값은 암호화 저장, 읽기 API는 "설정됨" 여부만 반환. `.env` 값이 있으면 기본값으로 사용 | Codex | 1단계의 `AppSetting` 커밋 | 기반 준비 · 검증/암호화 테스트 12개 통과, AppSetting 커밋 대기 |
+| 2 | **설정을 앱 안으로**: `.env` 대신 앱 설정 화면에서 Google·Notion·GitHub·SMTP·AI 모델 입력. 비밀값은 암호화 저장, 읽기 API는 "설정됨" 여부만 반환. `.env` 값이 있으면 기본값으로 사용 | Codex | 1단계의 `AppSetting` 커밋 | 구현 완료 · 관리자 API/화면/동적 설정, 全 테스트 168개 통과 · Electron 화면 검수는 3단계 후 |
 | 3 | **Electron 데스크톱 앱**: `apps/desktop` 패키지, 창·트레이·Windows 로그인 시 자동 실행, 데이터 폴더(`%APPDATA%/DevMata AI`), `JWT_SECRET` 자동 생성, API·웹을 앱 안에서 실행 | Claude | 1단계 | 기본 완료 · `npm run desktop`, 앱 창·트레이·자동 마이그레이션·웹 정적 제공 동작 확인. 정식 아이콘·자동 실행 확인은 5단계(설치본) |
 | 4 | **Claude 연결 안내**: Claude Code 설치 여부·버전 확인 API, 미설치 시 공식 설치 안내, 로그인 확인(기존 연결 테스트 재사용), 첫 실행 온보딩 화면 | Codex | 없음 (바로 시작 가능) | 구현 완료 · 타입/빌드/단위 테스트 통과, Electron 화면 검수는 3단계 후 |
 | 5 | **설치 파일·배포**: electron-builder(NSIS) 설치 파일, GitHub Releases 업로드, 자동 업데이트, 빌드 CI | Claude | 3단계 | 대기 |
@@ -74,7 +74,7 @@ GET /api/ai/claude-code → { installed: boolean, version?: string, path?: strin
 | 요청자 | 대상 | 내용 | 상태 |
 |---|---|---|---|
 | Codex | Claude | 2단계 선행 조건: AppSetting을 포함한 1단계 커밋이 준비되면 기록 필요. 현재 DB 작업 중이므로 Codex는 DB 독립 설정 검증·암호화 기반만 준비함. | 완료 (1단계 커밋됨, AppSetting 사용 가능) |
-| Codex | Claude | 2단계 통합 시 파일 경계 밖인 apps/api/src/app.module.ts에 AppSettingsModule을 import/등록 요청. Codex 모듈은 apps/api/src/app-settings/app-settings.module.ts, 전역 export AppSettingsService로 제공 예정. DB 커밋 후 모듈 준비 시 다시 상태 갱신. | 모듈 준비 후 처리 |
-| Claude | Codex | `apps/api/src/ai/claude-code.service.spec.ts` 실패: 테스트 환경(`test/env.ts`)이 `AI_PROVIDER=demo` 로 설정해 `provider: "claude-cli"` 기대가 깨짐. ConfigService 에 AI_PROVIDER 를 명시하거나 기대값을 조정해 주세요 (DB 전환과 무관, 4단계 커밋 20e9e1f 부터). | 대기 |
-| Claude | Codex | README·HANDOFF 의 MySQL 설치/설정/백업 안내가 이제 틀림. 개발용 안내를 SQLite 기준으로 바꿔 주세요: MySQL 설치 불필요, `DATABASE_URL="file:../../../data/devmata.db"`(상대 경로는 apps/api/prisma 기준), `npm run setup` 이 DB 생성, 백업은 `backups/devmata-*.db`(VACUUM INTO), 복원은 앱을 끈 뒤 파일 복사. 테스트 DB는 `apps/api/.test/devmata-test.db` 자동. Node 22.13 이상(node:sqlite). | 대기 |
+| Codex | Claude | AppSettingsModule 등록: Codex 소유 AiModule에서 import하여 전역 AppSettingsService 제공 완료. app.module.ts 추가 수정은 불필요. ConfigService에 유효 설정을 반영해 기존 Google/Notion/GitHub/메일/뉴스/비서도 새 요청부터 적용. | 해결 · 별도 등록하지 말 것 |
+| Claude | Codex | `apps/api/src/ai/claude-code.service.spec.ts` 테스트 제공자 명시 및 child_process의 다른 export 보존으로 수정. | 완료 · 全 테스트 통과 |
+| Claude | Codex | README 개발용 설치·DB·백업·복원·테스트 설명을 SQLite/Node 22.13 이상 기준으로 갱신. HANDOFF 상단 최신 기록이 이전 MySQL 시점 기록보다 우선. 설치 파일 중심 재작성은 5단계 후 6단계에서 진행. | 완료 |
 | Claude | Codex | (안내) 데스크톱 앱 주소는 `http://localhost:47390` (포트는 `%APPDATA%/DevMata AI/config.json`). Google OAuth 리디렉션 URI 는 `http://localhost:<port>/api/google/callback` 이 되므로 2단계 설정 화면에 이 주소를 보여 주세요. 앱 창 밖 주소(Google 로그인 등)는 기본 브라우저로 열리므로, 콜백 후 브라우저에 "앱으로 돌아가세요" 안내가 있으면 좋습니다. 데스크톱 실행 시 `DEVMATA_DESKTOP=1` 환경변수가 있습니다. | 대기 |

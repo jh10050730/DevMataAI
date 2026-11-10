@@ -30,6 +30,7 @@ export function validateSettingsPatch(input: unknown): Record<string, string | n
     if (typeof value !== 'string' || value.length > 4096 || /[\u0000-\u001f\u007f]/.test(value)) throw new BadRequestException(`${definition.label} 입력 형식을 확인해 주세요.`);
     const normalized = definition.secret ? value : value.trim();
     const fail = () => { throw new BadRequestException(`${definition.label} 입력 형식을 확인해 주세요.`); };
+    if (!normalized && (definition.kind === 'port' || definition.kind === 'provider')) fail();
     if (normalized) {
       if (definition.kind === 'port' && (!/^\d+$/.test(normalized) || +normalized < 1 || +normalized > 65535)) fail();
       if (definition.kind === 'email' && !isEmail(normalized)) fail();

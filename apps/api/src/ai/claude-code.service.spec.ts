@@ -1,12 +1,12 @@
 import { ConfigService } from '@nestjs/config';
 import { execFile } from 'node:child_process';
 import { ClaudeCodeService } from './claude-code.service';
-jest.mock('node:child_process', () => ({ execFile: jest.fn() }));
+jest.mock('node:child_process', () => ({ ...jest.requireActual('node:child_process'), execFile: jest.fn() }));
 describe('Claude Code installation check', () => {
   beforeEach(() => jest.clearAllMocks());
   it('checks only --version without invoking inference or a shell', async () => {
     (execFile as unknown as jest.Mock).mockImplementation((_path, _args, _options, callback) => callback(null, '2.1.211 (Claude Code)'));
-    const result = await new ClaudeCodeService(new ConfigService({ CLAUDE_CLI_PATH: 'C:\\Tools\\claude.exe' })).status();
+    const result = await new ClaudeCodeService(new ConfigService({ AI_PROVIDER: 'claude-cli', CLAUDE_CLI_PATH: 'C:\\Tools\\claude.exe' })).status();
     expect(result).toMatchObject({ installed: true, version: '2.1.211', loginVerified: false, provider: 'claude-cli' });
     expect(execFile).toHaveBeenCalledWith('C:\\Tools\\claude.exe', ['--version'], expect.objectContaining({ shell: false, windowsHide: true, timeout: 15000, maxBuffer: 16384 }), expect.any(Function));
     const options = (execFile as unknown as jest.Mock).mock.calls[0][2];

@@ -1,5 +1,7 @@
 # DevMata AI
 
+설정 → **앱 연결 설정**에서 Google·Notion·GitHub·SMTP·Claude 모델을 관리합니다. 처음 가입한 관리자만 조회·저장할 수 있고 비밀값은 암호화 저장합니다. 비밀 입력란이 빈 상태면 기존 값은 유지됩니다. 저장값 비우기는 비활성화, 기본 설정으로 복귀는 앱 저장값 삭제 후 환경변수 기본값 사용입니다. 새 요청부터 적용되며 Google 인증 정보를 바꾸면 다시 연결하세요.
+
 로그인의 **자동 로그인**은 기본 해제입니다. 해제하면 로그인 토큰을 해당 탭의 `sessionStorage`에 보관하며 앱 안 메뉴 이동과 새로고침에서만 유지합니다. 새 방문·뒤로 가기로 재방문·복제한 탭에서는 임시 로그인을 복원하지 않고, bfcache 복원도 별도로 정리합니다. 체크하면 `localStorage`에 저장해 브라우저를 다시 열어도 서버 토큰 유효기간 안에서 로그인 상태를 복원합니다. 비밀번호 자체는 저장하지 않습니다. 기존의 무조건 저장된 로그인 정보는 새 방식 적용 시 정리하므로 한 번 다시 로그인해야 합니다. 회원가입 직후 로그인도 임시 로그인으로 처리합니다.
 
 이는 브라우저의 로그인 유지 방식을 제어하는 기능입니다. 브라우저 종료나 강제 종료를 서버에서 확실하게 감지해 이미 발급한 JWT를 즉시 폐기하는 방식은 아니며, 브라우저 세션 복원 동작에 따라 예외가 있을 수 있습니다. 서버 JWT는 기존 만료 정책과 비밀번호 재설정 시 세션 무효화 정책을 따릅니다.
@@ -10,9 +12,9 @@
 
 마감 알림은 **할 일 마감일과 일정 종료 시간**을 기준으로 한 달·3주·1주·하루 전에 생성합니다. 한 달 전은 한국 시간 기준 전월 같은 날짜이며 없는 날짜는 말일을 사용합니다. 종일 일정은 마지막 포함 날짜의 23:59:59를 기준으로 합니다. 상단 종 모양의 알림함과 **설정 → 마감 알림**에서 확인·모두 읽기·앱 내/이메일 수신 설정을 관리합니다. API 서버 실행 중 1분마다 확인하고, 서버가 꺼져 놓친 단계는 다시 실행될 때 가장 가까운 단계 하나만 생성합니다. 동일 대상·마감일·단계의 중복을 막고, 날짜 변경·완료·삭제는 다음 확인 때 반영합니다. 앱 내 알림은 앱을 열어 확인하는 방식이며 OS 푸시 알림은 아닙니다.
 
-**메일 발송 설정 필요**: `apps/api/.env`에 `SMTP_HOST`, `SMTP_PORT`(587 STARTTLS / 465 TLS), `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`을 설정하고 서버를 재시작해야 비밀번호 재설정·이메일 마감 알림이 발송됩니다. 발신 계정에는 메일 제공자가 요구하는 앱 비밀번호나 SMTP 전용 인증 정보를 사용하세요. 재설정 링크는 `WEB_ORIGIN`을 사용하며 외부 배포 시 HTTPS 주소가 필요합니다. 현재 메일이 미설정이면 재설정 요청은 설정 필요 오류를 표시하고 앱 내 마감 알림만 동작합니다. 메일 알림 발송 실패는 15분 간격으로 최대 3회 시도합니다. 메일 전송 후 기록 직전에 서버가 종료되면 재발송될 가능성이 있습니다.
+**메일 발송 설정 필요**: 앱 연결 설정의 메일 서버·포트(587 STARTTLS / 465 TLS)·계정·앱 비밀번호·발신 이메일을 저장하면 새 요청부터 적용됩니다. 발신 계정에는 제공자가 요구하는 SMTP 인증 정보를 사용하세요. 재설정 링크는 WEB_ORIGIN 기준이며 외부 배포 시 HTTPS가 필요합니다. 미설정이면 앱 내 알림만 동작합니다. 메일 실패는 15분 간격 최대 3회 시도하며 전송 직후 서버 종료 시 중복 발송 가능성이 있습니다.
 
-새 DB 마이그레이션: `20261109020000_add_password_reset_notifications`. API: `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`, `GET /api/notifications`, `PATCH /api/notifications/:id/read`, `POST /api/notifications/read-all`, `GET/PATCH /api/notifications/settings`.
+SQLite 초기 마이그레이션 `20261110000000_init`에 포함되어 있습니다. API: `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`, `GET /api/notifications`, `PATCH /api/notifications/:id/read`, `POST /api/notifications/read-all`, `GET/PATCH /api/notifications/settings`.
 
 일정·할 일·학습 노트·뉴스·프로젝트를 한곳에서 관리하고, 본인의 Claude로 요약·브리핑·진행률 추정을 받는 개인용 워크스페이스입니다.
 처음 쓰는 분은 [내 PC에 설치하기](#내-pc에-설치하기)를 따라 각자 PC에 설치하세요.
@@ -42,7 +44,7 @@ AI 데이터 변경은 **제안 → 내용 검토 → 확인하고 적용** 순�
 비서 API: `/api/assistant/briefing`, `/search?q=`, `/recommendations/:projectId`,
 `POST /chat`, `POST /actions`, `POST /actions/:id/confirm`, `POST /actions/:id/cancel`.
 모든 개인 데이터 조회와 변경 제안은 로그인한 사용자 소유 범위로 제한합니다. 뉴스는 공용 데이터입니다.
-마이그레이션 `20261107121459_add_assistant_actions`를 적용해야 합니다.
+SQLite 초기 마이그레이션 `20261110000000_init`에 포함되어 있습니다.
 실제 AI 연결 검증은 빌드 후 `npm run assistant:smoke -w apps/api`로 실행합니다.
 이 명령은 임시 검사 계정을 만들고 응답을 확인한 뒤 삭제하며, 설정된 AI 제공자의 사용량이 발생합니다.
 2026-11-07 실제 Claude CLI 비서 응답과 조회 범위 안내를 확인했습니다. 브라우저 시각 검증은 별도로 필요합니다.
@@ -70,7 +72,7 @@ GitHub 조회는 종류별 최신 100개까지이며, 상한에 도달하거나 
 AI 주간 보고서는 개발 내용·이번 주 완료·진행 중·문제·다음 작업 제안·커밋 요약을 생성하고 당시 근거와 함께 저장합니다.
 데모 모드에서는 실제 분석이 아닌 DEMO 응답으로 표시합니다. 최근 보고서 최대 20개를 조회할 수 있습니다.
 프로젝트 삭제 시 하위 작업과 보고서도 함께 삭제됩니다.
-DB 변경은 `npm run db:deploy -w apps/api`로 적용하며, 개발 마이그레이션 `20261107114545_add_projects`가 포함되어 있습니다.
+DB 변경은 `npm run db:deploy -w apps/api`로 적용하며, SQLite 초기 마이그레이션 `20261110000000_init`에 포함되어 있습니다.
 공개 GitHub 연결 확인: 빌드 후 `npm run projects:smoke -w apps/api` (예제 저장소만 읽으며 사용자 데이터를 만들지 않음).
 
 프로젝트 API: `/api/projects` CRUD, `/:id/items` 생성·수정·삭제,
@@ -100,25 +102,24 @@ API: `GET /api/news?q=&category=AI`, `POST /api/news/refresh`,
 이 명령은 개발 DB에 수집한 기사를 저장합니다.
 
 일정과 할 일, 학습 기록을 관리하는 개인 워크스페이스입니다.
-React/Vite 프론트엔드와 NestJS/Prisma/MySQL 8 백엔드를 npm workspaces로 구성합니다.
+React/Vite 프론트엔드와 NestJS/Prisma/SQLite 백엔드를 npm workspaces로 구성합니다.
 
 ## 내 PC에 설치하기
 
 DevMata AI는 **각자 자기 PC에 설치해서 쓰는 개인용 앱**입니다.
 AI 기능은 그 PC에 로그인된 **본인의 Claude Code(Pro/Max 구독)**로 동작하므로 토큰도 각자 계정에서 사용됩니다.
-데이터는 각자 PC의 MySQL에만 저장되고, 서버는 `127.0.0.1`에서만 열려 다른 기기에서는 접속되지 않습니다.
+데이터는 각자 PC의 SQLite 파일에 저장되고, 서버는 `127.0.0.1`에서만 열려 다른 기기에서는 접속되지 않습니다.
 다른 사람이 내 PC의 서버에 접속해 내 Claude 로그인으로 AI를 쓰게 하는 방식은 Anthropic 정책상 허용되지 않으니, 함께 쓰려면 각자 설치하세요.
 
 ### 1. 준비물 (Windows 기준)
 
 | 필요한 것 | 설치 방법 |
 |---|---|
-| Node.js 22 LTS (20.19 이상 또는 22.12 이상) | `winget install OpenJS.NodeJS.LTS` |
+| Node.js 22.13 이상 (`node:sqlite` 필요) | `winget install OpenJS.NodeJS.LTS` |
 | Git | `winget install Git.Git` |
-| MySQL 8.4 | `winget install Oracle.MySQL` 후 MySQL Configurator로 서버 구성 (포트 3306, 서비스 이름 `MySQL84`) |
 | Claude Code + Pro/Max 구독 | [Claude Code 설치 안내](https://docs.anthropic.com/en/docs/claude-code) 후 터미널에서 `claude`를 한 번 실행해 로그인 |
 
-구독이 없으면 `.env`에서 `AI_PROVIDER=anthropic-api`와 본인 `ANTHROPIC_API_KEY`를 쓰거나, `AI_PROVIDER=demo`로 AI 없이 써 볼 수 있습니다.
+AI 없이 살펴보려면 앱 연결 설정에서 데모 모드를 선택할 수 있습니다.
 
 ### 2. 내려받기와 설정 파일
 
@@ -132,7 +133,7 @@ Copy-Item apps/api/.env.example apps/api/.env
 이미 `.env`가 있으면 복사하지 말고 기존 설정을 유지하세요.
 `apps/api/.env`에서 두 가지를 꼭 바꿉니다.
 
-- `DATABASE_URL`: 아래 3단계에서 정한 MySQL 비밀번호를 넣습니다.
+- `DATABASE_URL="file:../../../data/devmata.db"`: 경로는 `apps/api/prisma` 기준이며 저장소의 `data/devmata.db`를 사용합니다.
 - `JWT_SECRET`: 아래 명령으로 만든 무작위 값을 넣습니다 (32자 이상).
   ```powershell
   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
@@ -140,21 +141,9 @@ Copy-Item apps/api/.env.example apps/api/.env
 
 나머지(Google·Notion·GitHub)는 비워 둬도 됩니다. 필요할 때 아래 **연동 설정**을 참고하세요.
 
-### 3. MySQL 설정
+### 3. SQLite 설정
 
-MySQL 8.x 서버가 필요합니다 (Windows: `winget install Oracle.MySQL` 후 MySQL Configurator로 서버 구성, 기본 포트 3306).
-root로 접속해 앱 전용 계정과 DB를 만듭니다. 비밀번호는 직접 정하세요.
-
-```sql
-CREATE DATABASE devmate CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'devmate'@'localhost' IDENTIFIED BY '비밀번호';
-GRANT ALL PRIVILEGES ON devmate.* TO 'devmate'@'localhost';
--- 마이그레이션용 임시(shadow) DB와 테스트 DB(devmate_test) 생성에 필요
-GRANT CREATE, DROP, ALTER, INDEX, REFERENCES, SELECT, INSERT, UPDATE, DELETE ON *.* TO 'devmate'@'localhost';
-```
-
-`.env`: `DATABASE_URL="mysql://devmate:비밀번호@localhost:3306/devmate"`
-(비밀번호에 `@ : / # ?` 등이 있으면 URL 인코딩합니다.)
+MySQL 설치·계정·서비스 설정은 필요 없습니다. `DATABASE_URL="file:../../../data/devmata.db"`를 사용하며, `npm run setup`이 DB 파일과 테이블을 생성합니다. 상대 경로는 `apps/api/prisma` 기준입니다.
 
 ### 4. DB 준비와 첫 실행
 
@@ -166,7 +155,7 @@ npm run dev
 ```
 
 웹: http://localhost:5173 · API 상태 확인: http://localhost:3000/api/health
-웹에서 회원가입 후 사용합니다. 계정은 각자 PC의 DB에만 만들어집니다. 데이터는 MySQL `devmate` DB에 저장됩니다.
+웹에서 회원가입 후 사용합니다. 데이터와 계정은 각자 PC의 `data/devmata.db`에 저장됩니다.
 **설정 → AI 연결 테스트**로 Claude Code 로그인이 동작하는지 확인하세요.
 
 ### 5. 매번 켜기 귀찮다면 (선택)
@@ -196,14 +185,13 @@ npm run server:start
 ### 개발 참고
 스키마를 바꾼 뒤에는 `npm run db:migrate -w apps/api -- --name <변경이름>`으로 마이그레이션을 만듭니다 (`prisma/migrations`).
 스키마를 갱신하기 전에는 DB를 백업하세요 (아래 **DB 백업**). 데이터 삭제를 허용하는 옵션은 일반 설정 과정에 필요하지 않습니다.
-이전 SQLite 파일(`apps/api/prisma/dev.db`)은 더 이상 사용하지 않으며 지우지 않고 남겨 두었습니다.
+기존 MySQL 데이터는 별도 이전 스크립트로 SQLite에 옮길 수 있습니다. 이전 전 DB 백업을 보관하세요.
 
 ### 바로 실행 (Windows, `start.bat`)
 
-처음 설정(`.env`, MySQL, `npm run setup`)을 마친 뒤에는 저장소 루트의 `start.bat`을 더블클릭하면 됩니다.
+개발용 처음 설정(`.env`, `npm run setup`)을 마친 뒤에는 저장소 루트의 `start.bat`을 더블클릭하면 됩니다.
 
 1. Node.js 설치와 `apps/api/.env` 존재를 확인합니다. 없으면 안내 후 멈춥니다.
-2. `MySQL84` 서비스가 꺼져 있으면 경고합니다 (`services.msc`에서 시작). 다른 버전이면 경고 문구만 무시하세요.
 3. `node_modules`가 없으면 `npm install`을 실행합니다.
 4. 새 마이그레이션이 있으면 `prisma migrate deploy`로 적용합니다 (데이터를 지우지 않음).
 5. `npm run dev`로 API와 웹을 켜고, API가 응답하면 브라우저에서 http://localhost:5173 을 엽니다 (최대 60초 대기).
@@ -212,14 +200,9 @@ npm run server:start
 
 ### DB 백업 (`backup-db.bat`)
 
-`backup-db.bat`을 더블클릭하거나 `npm run db:backup`을 실행하면 `.env`의 `DATABASE_URL` DB를
-`backups/<DB이름>-YYYYMMDD-HHMMSS.sql`로 저장합니다 (`mysqldump --single-transaction`, utf8mb4).
+`backup-db.bat` 또는 `npm run db:backup`은 SQLite `VACUUM INTO`로 실행 중에도 일관된 `backups/devmata-YYYYMMDD-HHMMSS.db` 사본을 만듭니다. `npm run db:verify-backup`으로 무결성·구조·마이그레이션을 확인할 수 있습니다.
 
-- `mysqldump`는 `C:\Program Files\MySQL\MySQL Server 8.4|9.0|8.0\bin`, 그다음 `PATH`에서 찾습니다. 다른 위치면 `MYSQLDUMP` 환경변수로 지정합니다.
-- 비밀번호는 명령줄이 아닌 환경변수로만 전달하며 화면에 출력하지 않습니다.
-- 실패하면 불완전한 파일을 지우고 오류를 표시합니다. 오래된 백업은 자동으로 지우지 않습니다.
-- 복원: `mysql -u devmate -p < backups\devmate-....sql` (덤프에 `CREATE DATABASE`/`USE`가 포함되어 같은 이름의 DB로 복원됩니다).
-- `backups/`는 Git에 올리지 않습니다.
+복원할 때는 앱과 서버를 완전히 종료한 뒤 현재 DB를 별도로 보관하고 백업 파일을 `DATABASE_URL`의 DB 위치로 복사합니다. 백업 당시의 DB·WAL·SHM 파일을 섞지 마세요. `backups/`와 개인 DB 파일은 Git에 올리지 않습니다.
 
 Windows에서 Prisma 생성 중 `query_engine-windows.dll.node`의 `EPERM` 오류가 발생하면
 이 프로젝트의 API 개발 서버를 종료한 후 `npm run db:generate -w apps/api`를 다시 실행하세요.
@@ -255,7 +238,7 @@ API 키나 JSON 파일 다운로드는 필요 없고, OAuth 클라이언트 ID�
 1. https://console.cloud.google.com 에서 프로젝트를 만들고 **Google Calendar API**를 사용 설정합니다.
 2. **OAuth 동의 화면**: 사용자 유형 **외부**, 테스트 사용자에 본인 Gmail 주소를 추가합니다.
 3. **사용자 인증 정보 → OAuth 클라이언트 ID**: 유형 **웹 애플리케이션**, 승인된 리디렉션 URI에 `http://localhost:3000/api/google/callback`을 그대로 등록합니다.
-4. 발급된 값을 `apps/api/.env`의 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`에 넣고 API 서버를 재시작합니다.
+4. 발급된 값을 앱 연결 설정의 Google 클라이언트 ID·비밀번호에 저장합니다.
    포트나 주소를 바꿨다면 `GOOGLE_REDIRECT_URI`도 콘솔에 등록한 값과 똑같이 맞춥니다.
 5. 웹의 **설정 → Google 계정 연결**로 로그인한 뒤 **지금 동기화**를 누릅니다.
 
@@ -268,14 +251,14 @@ API 키나 JSON 파일 다운로드는 필요 없고, OAuth 클라이언트 ID�
 
 공개 저장소는 토큰 없이 조회됩니다. 비공개 저장소의 커밋·이슈·PR을 보려면 GitHub **Settings → Developer settings →
 Fine-grained tokens**에서 해당 저장소만 선택하고 권한을 **Contents·Issues·Pull requests: Read-only**로 만든 토큰을
-`GITHUB_TOKEN`에 넣고 API 서버를 재시작합니다. 앱은 GitHub에 쓰지 않습니다.
+앱 연결 설정의 GitHub 토큰에 저장합니다. 앱은 GitHub에 쓰지 않습니다.
 
 ### Notion 설정 (선택)
 
-1. https://www.notion.so/my-integrations 에서 Internal Integration을 만들고 토큰을 `apps/api/.env`의 `NOTION_TOKEN`에 넣습니다.
+1. https://www.notion.so/my-integrations 에서 Internal Integration을 만들고 토큰을 앱 연결 설정의 Notion 토큰에 저장합니다.
 2. 가져오거나 저장할 페이지마다 `···` → **연결(Connections)** 에서 integration을 추가합니다. 연결한 페이지에만 접근할 수 있습니다.
-3. 노트를 Notion에 새 페이지로 저장하려면 상위 페이지 링크를 `NOTION_PARENT_PAGE_ID`에 넣습니다.
-4. API 서버를 재시작합니다.
+3. 노트를 Notion에 새 페이지로 저장하려면 상위 페이지 ID를 앱 연결 설정의 Notion 저장할 페이지 ID에 넣습니다.
+4. 새 요청부터 저장한 설정을 사용합니다.
 
 - 같은 페이지를 다시 가져오면 새 노트를 만들지 않고 기존 노트를 갱신합니다.
 - 내용이 바뀌지 않았으면 다시 저장하지 않습니다 (해시 비교).
@@ -305,9 +288,7 @@ npm test
 npm run build
 ```
 
-API 테스트는 `.env`의 DB 이름 뒤에 `_test`를 붙인 별도 MySQL DB(`devmate_test`)를 매번 새로 만듭니다.
-이름이 `_test`로 끝나는 DB만 초기화하며 개발 DB는 건드리지 않습니다. 다른 DB를 쓰려면 `TEST_DATABASE_URL`을 지정합니다.
-2026-11-08 기준 (MySQL 8.4) 타입 검사, 빌드, API 69개 및 프론트 7개 테스트가 통과했습니다.
+API 테스트는 전용 SQLite 파일 `apps/api/.test/devmata-test.db`를 자동으로 만들고 초기화합니다. 개발 DB는 건드리지 않습니다. 테스트 DB 경로 안전 검사는 공통 테스트 기반에서 수행합니다.
 브라우저 화면에 대한 자동 테스트는 아직 없습니다.
 
 전체 계획과 남은 작업은 [개발 로드맵](docs/ROADMAP.md)을 참고하세요.

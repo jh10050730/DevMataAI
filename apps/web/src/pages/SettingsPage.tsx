@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import DemoDataCard from '../components/DemoDataCard';
 import IntegrationsCard from '../components/IntegrationsCard';
 import NotificationSettingsCard from '../components/NotificationSettingsCard';
+import AppSettingsCard from '../components/AppSettingsCard';
 import { Button, Card, Field, Input } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -62,6 +63,7 @@ export default function SettingsPage() {
         </div>
       </Card>
 
+      <AppSettingsCard />
       <IntegrationsCard />
       <NotificationSettingsCard />
 

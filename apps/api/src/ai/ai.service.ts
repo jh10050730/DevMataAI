@@ -1,4 +1,5 @@
-import { HttpException, Injectable, Logger } from '@nestjs/common';
+import { HttpException, Injectable, Logger, Optional } from '@nestjs/common';
+import { AppSettingsService } from '../app-settings/app-settings.service';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiError, AiProvider, AiRequest, AiResult } from './ai.types';
@@ -15,23 +16,24 @@ const MAX_CONCURRENT = 2;
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
-  private readonly provider: AiProvider;
   private inFlight = 0;
 
   constructor(
-    config: ConfigService,
+    private readonly config: ConfigService,
     private readonly prisma: PrismaService,
-  ) {
+    @Optional() private readonly settings?: AppSettingsService,
+  ) {}
+
+  private get provider(): AiProvider {
+    const config = { get: <T>(name: string, fallback?: unknown): T => (this.settings ? this.settings.getEnv(name) ?? fallback : this.config.get<T>(name) ?? fallback) as T };
     const name = config.get<string>('AI_PROVIDER', 'claude-cli');
-    this.provider =
-      name === 'claude-cli'
+    return name === 'claude-cli'
         ? new ClaudeCliProvider({
             path: config.get<string>('CLAUDE_CLI_PATH') || 'claude',
             model: config.get<string>('CLAUDE_CLI_MODEL') || undefined,
             timeoutMs: Number(config.get('CLAUDE_CLI_TIMEOUT_MS')) || 120_000,
           })
         : new DemoProvider(); // anthropic-api 는 추후 추가 (지금은 데모로 대체)
-    if (name === 'anthropic-api') this.logger.warn('anthropic-api 프로바이더는 아직 구현되지 않아 demo 로 동작합니다.');
   }
 
   async status() {

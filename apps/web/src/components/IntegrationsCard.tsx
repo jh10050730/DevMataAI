@@ -87,7 +87,7 @@ export default function IntegrationsCard() {
           </ul>
         )
       )}
-      <p className="mt-3 text-[11px] text-muted">토큰과 키는 서버의 apps/api/.env 에만 저장되고 화면에는 표시되지 않아요. 변경 후에는 API 서버를 재시작하세요.</p>
+      <p className="mt-3 text-[11px] text-muted">연결 정보는 위 앱 연결 설정에서 관리할 수 있어요. 비밀값은 암호화해 저장하며 화면에 다시 표시하지 않습니다.</p>
       <Link to="/claude-setup" className="mt-4 inline-block text-sm font-semibold text-accent">Claude Code 설치·로그인 안내 다시 보기 →</Link>
     </Card>
   );

@@ -1,14 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { AppSettingsService } from '../app-settings/app-settings.service';
 import { ConfigService } from '@nestjs/config';
 import { execFile } from 'node:child_process';
 import { tmpdir } from 'node:os';
 
 @Injectable()
 export class ClaudeCodeService {
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly config: ConfigService, @Optional() private readonly settings?: AppSettingsService) {}
   async status() {
-    const provider = this.config.get<string>('AI_PROVIDER', 'claude-cli');
-    const path = this.config.get<string>('CLAUDE_CLI_PATH') || 'claude';
+    const provider = (this.settings ? this.settings.getEnv('AI_PROVIDER') : this.config.get<string>('AI_PROVIDER')) || 'claude-cli';
+    const path = (this.settings ? this.settings.getEnv('CLAUDE_CLI_PATH') : this.config.get<string>('CLAUDE_CLI_PATH')) || 'claude';
     const base = { provider, path, loginVerified: false, installUrl: 'https://code.claude.com/docs/en/setup' };
     const env = { ...process.env };
     delete env.ANTHROPIC_API_KEY; delete env.ANTHROPIC_AUTH_TOKEN;
