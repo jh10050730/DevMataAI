@@ -1,10 +1,14 @@
 import { Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { AuthUser, CurrentUser } from '../common/current-user.decorator';
 import { AiService } from './ai.service';
+import { ClaudeCodeService } from './claude-code.service';
 
 @Controller('ai')
 export class AiController {
-  constructor(private readonly ai: AiService) {}
+  constructor(private readonly ai: AiService, private readonly claudeCode: ClaudeCodeService) {}
+
+  @Get('claude-code')
+  claudeCodeStatus() { return this.claudeCode.status(); }
 
   @Get('status')
   status() {
