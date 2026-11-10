@@ -97,3 +97,30 @@ test('only settings routes from the API open in the app window', () => {
   assert.equal(appRoute({ type: 'ready', port: 1 }), null);
   assert.equal(appRoute(null), null);
 });
+
+test('log rotation keeps a few old files', () => {
+  const { rotateLog } = require('./server.cjs');
+  const { existsSync } = require('node:fs');
+  const dir = mkdtempSync(join(tmpdir(), 'devmata-log-'));
+  try {
+    const file = join(dir, 'api.log');
+    writeFileSync(file, 'small');
+    assert.equal(rotateLog(file, 100), false);
+    for (let i = 1; i <= 5; i++) { writeFileSync(file, `run${i}`.padEnd(200, '.')); assert.equal(rotateLog(file, 100, 3), true); }
+    assert.equal(existsSync(file), false);
+    assert.match(readFileSync(join(dir, 'api.1.log'), 'utf8'), /^run5/);
+    assert.match(readFileSync(join(dir, 'api.3.log'), 'utf8'), /^run3/);
+    assert.equal(existsSync(join(dir, 'api.4.log')), false);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('Claude Code is found on PATH or in the official install folders', () => {
+  const { findClaude } = require('./paths.cjs');
+  // 경로 구분자는 OS 마다 다르므로 / 로 맞춰 비교한다
+  const norm = f => f.replace(/\\/g, '/');
+  const files = new Set(['C:/Users/me/.local/bin/claude.exe', 'D:/tools/claude.exe']);
+  const exists = f => files.has(norm(f));
+  assert.equal(norm(findClaude({ PATH: 'D:/tools', USERPROFILE: 'C:/Users/me' }, exists)), 'D:/tools/claude.exe');
+  assert.equal(norm(findClaude({ PATH: '', USERPROFILE: 'C:/Users/me' }, exists)), 'C:/Users/me/.local/bin/claude.exe');
+  assert.equal(findClaude({ PATH: '', USERPROFILE: 'C:/Users/other' }, exists), null);
+});

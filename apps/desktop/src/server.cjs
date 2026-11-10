@@ -1,8 +1,23 @@
 // API 서버(NestJS)를 Electron 의 Node 로 별도 프로세스에서 실행하고, 준비될 때까지 기다린다.
 const { fork } = require('node:child_process');
-const { createWriteStream, existsSync, mkdirSync } = require('node:fs');
+const { createWriteStream, existsSync, mkdirSync, renameSync, rmSync, statSync } = require('node:fs');
 const net = require('node:net');
 const { join } = require('node:path');
+
+/**
+ * 로그가 maxBytes 를 넘으면 api.log → api.1.log → api.2.log … 로 밀어내고 keep 개만 남긴다.
+ * 앱을 켤 때마다 확인하므로, 한 번 실행 중에는 그보다 조금 커질 수 있다.
+ */
+function rotateLog(file, maxBytes = 5 * 1024 * 1024, keep = 3) {
+  try {
+    if (!existsSync(file) || statSync(file).size < maxBytes) return false;
+    const old = i => file.replace(/\.log$/, `.${i}.log`);
+    rmSync(old(keep), { force: true });
+    for (let i = keep - 1; i >= 1; i--) if (existsSync(old(i))) renameSync(old(i), old(i + 1));
+    renameSync(file, old(1));
+    return true;
+  } catch { return false; } // 로그 정리 실패로 앱이 멈추면 안 된다
+}
 
 /** 포트가 비어 있는지 (127.0.0.1) */
 function portFree(port) {
@@ -27,6 +42,7 @@ async function startApi({ paths, env, port, logDir, timeoutMs = 90000 }) {
   if (!existsSync(paths.apiMain)) throw new Error(`API 빌드가 없습니다: ${paths.apiMain}\nnpm run build 를 먼저 실행하세요.`);
   if (!(await portFree(port))) throw new Error(`포트 ${port} 를 다른 프로그램이 쓰고 있습니다.\nDevMata AI 가 이미 실행 중인지 확인하세요.`);
   mkdirSync(logDir, { recursive: true });
+  rotateLog(join(logDir, 'api.log'));
   const log = createWriteStream(join(logDir, 'api.log'), { flags: 'a' });
   log.write(`\n[${new Date().toISOString()}] API 시작 (port ${port})\n`);
   const child = fork(paths.apiMain, [], { cwd: paths.apiRoot, env, stdio: ['ignore', 'pipe', 'pipe', 'ipc'], windowsHide: true });
@@ -45,4 +61,4 @@ async function startApi({ paths, env, port, logDir, timeoutMs = 90000 }) {
   return child;
 }
 
-module.exports = { portFree, healthy, startApi };
+module.exports = { portFree, healthy, rotateLog, startApi };

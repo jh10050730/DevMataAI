@@ -1,7 +1,7 @@
 // 개발 실행과 설치본에서 API·웹·마이그레이션 파일 위치를 찾는다.
 // 설치본 구조(5단계 electron-builder 에서 만든다): resources/api/{dist,node_modules,prisma/migrations}, resources/web
-const { readFileSync } = require('node:fs');
-const { join, resolve } = require('node:path');
+const { existsSync, readFileSync } = require('node:fs');
+const { delimiter, join, resolve } = require('node:path');
 
 function appPaths({ packaged, resourcesPath, sourceDir = __dirname }) {
   if (packaged) {
@@ -23,6 +23,26 @@ function loadAppDefaults(apiRoot) {
     const raw = JSON.parse(readFileSync(join(apiRoot, 'app-defaults.json'), 'utf8'));
     return Object.fromEntries(APP_DEFAULT_KEYS.filter(k => typeof raw[k] === 'string' && raw[k]).map(k => [k, raw[k]]));
   } catch { return {}; }
+}
+
+/**
+ * Claude Code 실행 파일 찾기. 시작 메뉴로 켠 앱은 Claude Code 설치 전의 PATH 를 들고 있을 수 있어서,
+ * PATH 와 함께 공식 설치 위치를 직접 확인한다. 실행 파일(.exe)만 돌려준다 (API 는 셸 없이 실행한다).
+ */
+function findClaude(env = process.env, exists = existsSync) {
+  const home = env.USERPROFILE || env.HOME || '';
+  const dirs = [
+    ...String(env.PATH || env.Path || '').split(delimiter).filter(Boolean),
+    home && join(home, '.local', 'bin'),                         // 공식 설치 스크립트
+    env.LOCALAPPDATA && join(env.LOCALAPPDATA, 'Programs', 'claude'),
+    env.LOCALAPPDATA && join(env.LOCALAPPDATA, 'AnthropicClaude'),
+    env.APPDATA && join(env.APPDATA, 'npm', 'node_modules', '@anthropic-ai', 'claude-code', 'bin'), // npm 설치
+  ].filter(Boolean);
+  for (const dir of dirs) {
+    const file = join(dir.replace(/^"|"$/g, ''), 'claude.exe');
+    if (exists(file)) return file;
+  }
+  return null;
 }
 
 /** API 프로세스에 넘길 환경변수. 개발용 .env 보다 우선한다. 앱 기본값은 이미 있는 환경변수를 덮어쓰지 않는다. */
@@ -61,4 +81,4 @@ function isExternalUrl(url) {
   try { return ['http:', 'https:'].includes(new URL(url).protocol); } catch { return false; }
 }
 
-module.exports = { APP_DEFAULT_KEYS, appPaths, apiEnv, appRoute, loadAppDefaults, isAppUrl, isExternalUrl };
+module.exports = { APP_DEFAULT_KEYS, appPaths, apiEnv, appRoute, findClaude, loadAppDefaults, isAppUrl, isExternalUrl };
