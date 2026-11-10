@@ -100,12 +100,12 @@ POST /api/desktop/update  { action: "check" | "install" } → 202 (install 은 �
 |---|---|
 | C1 | 설치 파일 다시 빌드 (새 Desktop 클라이언트·PKCE·앱 복귀 반영), 설치본 실제 실행 점검: 창·트레이·작업 관리자 이름·Windows 시작 시 자동 실행 메뉴·제거 후 데이터 유지 |
 | C2 | 예전 자동 실행 정리: `Startup\DevMata AI.lnk`(serve.mjs, 5173/3000) 제거 → 설치본의 자동 실행으로 대체. `start.bat`·`serve.mjs` 는 개발용으로 남기고 안내 갱신. OneDrive 안 빌드 찌꺼기(`apps/desktop/release`) 삭제 |
-| C3 | GitHub Actions: push/PR → 타입 검사·전체 테스트, `v*` 태그 → windows 에서 설치 파일 빌드 후 Releases 업로드 (`GITHUB_TOKEN`, Google 키는 Secrets) |
+| C3 | GitHub Actions: push/PR → 타입 검사·전체 테스트, `v*` 태그 → windows 에서 설치 파일 빌드 후 Releases 업로드 (`GITHUB_TOKEN`, Google 키는 Secrets) → **완료** (`.github/workflows/ci.yml`, `release.yml`. Secrets 는 U5) |
 | C4 | 자동 업데이트 (electron-updater + GitHub Releases): 시작 시·6시간마다 확인, 내려받으면 트레이·화면에 "재시작해서 업데이트". `POST /api/desktop/update` |
 | C5 | `GET /api/desktop/info`, `POST /api/desktop/open` (버전·데이터 폴더·로그 폴더) — 위 인터페이스 약속대로 → **완료** (`apps/api/src/desktop`, 화면은 도움말 → 앱 정보. `update` 는 C4 에서) |
 | C6 | 설치본 자동 백업: 하루 한 번 `%APPDATA%\DevMata AI\backups` 에 `VACUUM INTO`, 최근 7개 보관. 복원 방법 안내 → **완료** (`apps/api/src/backup`, `DB_BACKUP_DIR`·`DB_BACKUP_KEEP`, 복원은 도움말 FAQ) |
 | C7 | 로그 크기 제한 (`logs/api.log` 5MB 넘으면 교체, 3개 보관) → **완료** (`server.cjs` rotateLog) |
-| C8 | 버전 관리: `npm run release <버전>` → 버전 올리기·태그. 화면 표시 버전과 설치 파일 버전 일치 → **완료** (`npm run release -- patch|minor|major|x.y.z [--push]`, `scripts/release.mjs`) |
+| C8 | 버전 관리: `npm run release <버전>` → 버전 올리기·태그. 화면 표시 버전과 설치 파일 버전 일치 → **완료** (`npm run release -- patch`, `minor`, `major` 또는 `1.2.3`, 바로 올리려면 `--push`. `scripts/release.mjs`) |
 | C9 | 설치본에서 Claude Code 찾기 점검 (설치본은 PATH 가 다를 수 있음: `%APPDATA%\npm`, `%LOCALAPPDATA%\…` 등) — Codex 의 확인 코드와 함께 |
 
 **Codex** (자기 파일 경계 안에서. 새 API 가 필요하면 위 약속을 쓰거나 요청 표에 적기)

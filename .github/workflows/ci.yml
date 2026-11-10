@@ -1,0 +1,33 @@
+# 올릴 때마다 검사: 타입 검사, API·웹·운영 스크립트·데스크톱 테스트, 빌드.
+# 앱이 Windows 용이므로 Windows 에서 돌린다 (경로·실행 파일 찾기 테스트가 Windows 기준).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run db:generate -w apps/api
+      - run: npm run typecheck
+      - run: npm run test:ops
+      - run: npm test
+      - run: npm run build

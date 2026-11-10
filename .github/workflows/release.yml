@@ -1,0 +1,64 @@
+# 새 버전 배포: v1.2.3 태그가 올라오면 (npm run release -- ... --push) 검사 → 설치 파일 빌드 → GitHub Releases 에 올린다.
+# 설치된 앱은 Releases 의 latest.yml 을 보고 새 버전을 받는다 (자동 업데이트).
+# 필요한 Secrets: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET (설치본에 넣을 Google 연동 기본값). 없으면 Google 연결 없이 빌드된다.
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: 빌드 작업 폴더 정하기
+        shell: bash
+        run: echo "DEVMATA_BUILD_DIR=$(cygpath -m "$RUNNER_TEMP")/devmata-build" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: 태그와 앱 버전이 같은지 확인
+        shell: bash
+        run: |
+          version=$(node -p "require('./apps/desktop/package.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "태그($GITHUB_REF_NAME)와 앱 버전(v$version)이 다릅니다. npm run release 로 만드세요." >&2
+            exit 1
+          fi
+
+      - run: npm ci
+      - run: npm run db:generate -w apps/api
+      - run: npm run typecheck
+      - run: npm run test:ops
+      - run: npm test
+
+      - name: 설치 파일 만들기
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        run: npm run desktop:dist
+
+      - name: GitHub Releases 에 올리기
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release="$DEVMATA_BUILD_DIR/release"
+          version="${GITHUB_REF_NAME#v}"
+          exe="$release/DevMata-AI-Setup-$version.exe"
+          for f in "$exe" "$exe.blockmap" "$release/latest.yml"; do
+            [ -f "$f" ] || { echo "빌드 결과가 없습니다: $f" >&2; exit 1; }
+          done
+          gh release create "$GITHUB_REF_NAME" "$exe" "$exe.blockmap" "$release/latest.yml" \
+            --title "DevMata AI $version" --generate-notes --verify-tag
