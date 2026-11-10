@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, Bot, CalendarCheck, ChevronDown, FolderGit2, House, Layers3, LogOut, Menu, Moon, Newspaper, Search, Settings, Sun, X } from 'lucide-react';
+import { ArrowRight, BookOpen, Bot, CalendarCheck, ChevronDown, FolderGit2, House, Layers3, LifeBuoy, LogOut, Menu, Moon, Newspaper, Search, Settings, Sun, X } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
@@ -31,6 +31,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>)}
     </div>
     <div className="mt-auto pt-10">
+      <NavLink to="/help" onClick={onNavigate} className={({ isActive }) => cn('mb-1 flex min-h-[48px] items-center gap-3.5 rounded-2xl px-4 text-[15px] font-medium', isActive ? 'bg-sidebar-active text-accent' : 'text-sidebar-muted hover:bg-surface-2 hover:text-fg')}><LifeBuoy className="size-5" strokeWidth={2} />도움말</NavLink>
       <NavLink to="/settings" onClick={onNavigate} className={({ isActive }) => cn('flex min-h-[52px] items-center gap-3.5 rounded-2xl px-4 text-[15px] font-medium', isActive ? 'bg-sidebar-active text-accent' : 'text-sidebar-muted hover:bg-surface-2 hover:text-fg')}><Settings className="size-5" strokeWidth={2} />설정</NavLink>
     </div>
   </nav>;

@@ -12,6 +12,7 @@ import NewsPage from './pages/NewsPage';
 import StudyPage from './pages/StudyPage';
 import ProjectsPage from './pages/ProjectsPage';
 import PasswordResetPage from './pages/PasswordResetPage';
+import HelpPage from './pages/HelpPage';
 import ClaudeSetup, { ClaudeOnboardingGate } from './components/ClaudeSetup';
 import ConnectionBanner from './components/ConnectionBanner';
 
@@ -65,6 +66,7 @@ function AppRoutes() {
           element={<ProjectsPage />}
         />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="help" element={<HelpPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
