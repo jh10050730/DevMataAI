@@ -2,7 +2,7 @@
   "name": "devmate-ai",
   "version": "0.1.0",
   "private": true,
-  "description": "DevMate AI - 통합 AI 개인 워크스페이스",
+  "description": "DevMata AI - 통합 AI 개인 워크스페이스",
   "workspaces": [
     "apps/api",
     "apps/web"

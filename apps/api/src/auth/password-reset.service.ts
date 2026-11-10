@@ -30,7 +30,7 @@ export class PasswordResetService {
       // Fragment keeps the token out of HTTP URL logs and referrers.
       url.hash = 'token=' + token;
       // Dispatch asynchronously so SMTP latency does not expose whether an account exists.
-      void this.mail.send(email, '[DevMata] 비밀번호 재설정', `비밀번호를 바꾸려면 아래 링크를 열어 주세요.\n\n${url.href}\n\n15분 동안 한 번만 사용할 수 있습니다. 요청하지 않았다면 이 메일을 무시해 주세요.`).catch(async () => {
+      void this.mail.send(email, '[DevMata AI] 비밀번호 재설정', `비밀번호를 바꾸려면 아래 링크를 열어 주세요.\n\n${url.href}\n\n15분 동안 한 번만 사용할 수 있습니다. 요청하지 않았다면 이 메일을 무시해 주세요.`).catch(async () => {
         Logger.warn('비밀번호 재설정 메일 발송 실패. SMTP 설정을 확인하세요.', 'PasswordReset');
         await this.db.user.updateMany({ where: { id: user.id, resetTokenHash }, data: { resetTokenHash: null, resetTokenExpiresAt: null } }).catch(() => {});
       });

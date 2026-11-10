@@ -98,15 +98,15 @@ export default function GoogleCalendarPanel({ onChange }: { onChange?: () => voi
         </>
       )}
       {status.configured && (
-        <p className="text-[11px] text-muted">읽기 전용이에요. DevMate 는 Google 일정을 만들거나 수정·삭제하지 않고, 기본 캘린더의 일정을 가져오기만 해요.</p>
+        <p className="text-[11px] text-muted">읽기 전용이에요. DevMata AI는 Google 일정을 만들거나 수정·삭제하지 않고, 기본 캘린더의 일정을 가져오기만 해요.</p>
       )}
       {message && <p className={message.ok ? 'text-xs text-emerald-500' : 'text-xs text-red-500'}>{message.text}</p>}
 
       <Modal open={confirmOff} onClose={() => setConfirmOff(false)} title="Google Calendar 연결을 해제할까요?">
-        <p className="text-sm text-muted">저장된 토큰을 지우고 Google 계정에서 DevMate 의 접근 권한을 철회해요. Google Calendar 의 원래 일정은 그대로예요.</p>
+        <p className="text-sm text-muted">저장된 토큰을 지우고 Google 계정에서 DevMata AI의 접근 권한을 철회해요. Google Calendar 의 원래 일정은 그대로예요.</p>
         <label className="mt-4 flex items-center gap-2 text-sm">
           <input type="checkbox" checked={removeEvents} onChange={(e) => setRemoveEvents(e.target.checked)} className="size-4 accent-accent" />
-          DevMate 로 가져온 일정 {status.syncedEvents}개도 삭제
+          DevMata AI로 가져온 일정 {status.syncedEvents}개도 삭제
         </label>
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="ghost" onClick={() => setConfirmOff(false)}>

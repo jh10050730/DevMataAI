@@ -42,7 +42,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             <Layers3 className="size-6 text-white" strokeWidth={2} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">DevMata</h1>
+            <h1 className="text-2xl font-bold tracking-tight">DevMata AI</h1>
             <p className="mt-1 text-sm text-muted">{isLogin ? '다시 오신 걸 환영해요' : '나만의 AI 워크스페이스 만들기'}</p>
           </div>
         </div>

@@ -8,7 +8,7 @@ export class GithubService {
   async activity(repository: string) {
     if (!repository) return { connected: false, message: 'owner/repository 형식으로 저장소를 등록하세요.', sections: [] };
     const since = new Date(Date.now() - 7 * 86400000).toISOString();
-    const headers: Record<string, string> = { Accept: 'application/vnd.github+json', 'User-Agent': 'DevMateAI' };
+    const headers: Record<string, string> = { Accept: 'application/vnd.github+json', 'User-Agent': 'DevMataAI' };
     const token = this.config.get<string>('GITHUB_TOKEN');
     if (token) headers.Authorization = `Bearer ${token}`;
     const base = `https://api.github.com/repos/${repository.split('/').map(encodeURIComponent).join('/')}`;
@@ -30,7 +30,7 @@ export class GithubService {
   }
 
   private headers(accept = 'application/vnd.github+json') {
-    const headers: Record<string, string> = { Accept: accept, 'User-Agent': 'DevMateAI' };
+    const headers: Record<string, string> = { Accept: accept, 'User-Agent': 'DevMataAI' };
     const token = this.config.get<string>('GITHUB_TOKEN');
     if (token) headers.Authorization = `Bearer ${token}`;
     return headers;

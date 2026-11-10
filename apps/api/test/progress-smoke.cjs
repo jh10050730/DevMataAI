@@ -17,7 +17,7 @@ process.env.NEWS_AUTO_COLLECT = 'false';
   try {
     user = await db.user.create({ data: { email: `progress-smoke-${Date.now()}@example.invalid`, name: '진행률 검사', passwordHash: 'no-login' } });
     const projects = app.get(ProjectsService);
-    const project = await projects.save(user.id, { name: 'DevMate AI', goal: '일정·할 일·학습·뉴스·프로젝트를 한곳에서 관리하고 AI 비서가 돕는 개인 워크스페이스 완성', localPath: folder });
+    const project = await projects.save(user.id, { name: 'DevMata AI', goal: '일정·할 일·학습·뉴스·프로젝트를 한곳에서 관리하고 AI 비서가 돕는 개인 워크스페이스 완성', localPath: folder });
     const started = Date.now();
     const analysis = await projects.analyze(user.id, project.id);
     console.log(JSON.stringify({ step: 'analyze', seconds: Math.round((Date.now() - started) / 1000), demo: analysis.demo, aiProgress: analysis.aiProgress, confidence: analysis.detail?.confidence, summary: analysis.detail?.summary, done: analysis.detail?.done, remaining: analysis.detail?.remaining, read: (analysis.detail ?? analysis).sources?.map(s => s.read) }, null, 2));

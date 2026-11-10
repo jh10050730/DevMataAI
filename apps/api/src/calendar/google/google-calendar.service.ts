@@ -5,7 +5,7 @@ import { decryptToken, encryptToken, signState, verifyState } from './google-cry
 
 const PROVIDER = 'GOOGLE_CALENDAR';
 const SOURCE = 'GOOGLE';
-/** 읽기 전용 권한만 요청한다. DevMate 는 Google 일정을 만들거나 수정·삭제하지 않는다. */
+/** 읽기 전용 권한만 요청한다. DevMata AI는 Google 일정을 만들거나 수정·삭제하지 않는다. */
 export const GOOGLE_SCOPES = ['openid', 'email', 'https://www.googleapis.com/auth/calendar.readonly'];
 const DAY = 86_400_000;
 const SYNC_PAST_DAYS = 30;
@@ -250,8 +250,8 @@ export class GoogleCalendarService {
   }
 
   /**
-   * 기본 캘린더 → DevMate 일정 (읽기 전용 단방향).
-   * 최근 30일 ~ 앞으로 180일. Google 에서 삭제된 일정은 DevMate 의 사본만 지운다. Google 쪽 데이터는 바꾸지 않는다.
+   * 기본 캘린더 → DevMata AI 일정 (읽기 전용 단방향).
+   * 최근 30일 ~ 앞으로 180일. Google 에서 삭제된 일정은 DevMata AI의 사본만 지운다. Google 쪽 데이터는 바꾸지 않는다.
    */
   async sync(userId: string) {
     const token = await this.accessToken(userId);
@@ -346,7 +346,7 @@ export class GoogleCalendarService {
 
   /**
    * 연결 해제: 저장된 토큰을 지우고 Google 에 권한 철회를 요청한다.
-   * removeEvents=true 면 DevMate 에 가져온 사본 일정도 지운다 (Google 의 원본은 그대로).
+   * removeEvents=true 면 DevMata AI에 가져온 사본 일정도 지운다 (Google 의 원본은 그대로).
    */
   async disconnect(userId: string, removeEvents: boolean) {
     const row = await this.integration(userId);

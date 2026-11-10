@@ -29,7 +29,7 @@ const escapeXml = (value: string) =>
 
 export function toastXml(title: string, body: string, url?: string) {
   const launch = url ? ` activationType="protocol" launch="${escapeXml(url)}"` : '';
-  return `<toast${launch}><visual><binding template="ToastGeneric"><text>${escapeXml(title.slice(0, 120))}</text><text>${escapeXml(body.slice(0, 300))}</text><text placement="attribution">DevMata</text></binding></visual></toast>`;
+  return `<toast${launch}><visual><binding template="ToastGeneric"><text>${escapeXml(title.slice(0, 120))}</text><text>${escapeXml(body.slice(0, 300))}</text><text placement="attribution">DevMata AI</text></binding></visual></toast>`;
 }
 
 export function desktopToastEnabled(env: NodeJS.ProcessEnv = process.env, platform: string = process.platform) {

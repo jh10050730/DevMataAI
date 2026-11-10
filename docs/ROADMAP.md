@@ -1,4 +1,4 @@
-# DevMate AI — 개발 로드맵
+# DevMata AI — 개발 로드맵
 
 > 일정 관리 + 학습 관리 + IT 뉴스 + 개발 프로젝트 관리를 하나로 묶은 개인 AI 워크스페이스
 > 최종 업데이트: 2026-11-08 (데모 데이터 관리 구현, AI 비서 키워드 검색 개선 — 자세한 내용은 HANDOFF.md)
@@ -196,8 +196,8 @@
 
 | 시점 | 할 일 | 필수 여부 |
 |---|---|---|
-| 지금 | 폴더 이름 변경(DevMataAI → DevMateAI) 및 OneDrive 밖으로 이동 여부 결정 (`npm install` 전에 하는 게 좋음) | 권장 |
-| 지금 | Claude Code에 DevMateAI 워크스페이스용 Notion 연결 추가 (`notion-devmate`) | 이 로드맵을 Notion에 올리려면 필요 |
+| 지금 | 이름은 DevMata AI(폴더·저장소 DevMataAI)로 확정. OneDrive 밖으로 이동 여부만 결정 (`npm install` 전에 하는 게 좋음) | 권장 |
+| 지금 | Claude Code에 Notion DevMateAI 워크스페이스용 Notion 연결 추가 (`notion-devmate`) | 이 로드맵을 Notion에 올리려면 필요 |
 | MySQL 설치 후 | 알려주면 SQLite → MySQL 전환 | 나중에 |
 | Phase 2 | Notion 통합 토큰 발급 | 선택 |
 | Phase 4 | GitHub 토큰 발급 (읽기 전용) | 선택 |

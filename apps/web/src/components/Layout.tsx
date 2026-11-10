@@ -18,9 +18,9 @@ const NAV = [
 
 function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   return <nav aria-label="주 메뉴" className="flex h-full flex-col overflow-y-auto px-4 pb-6 pt-8 text-sidebar-text">
-    <NavLink to="/" onClick={onNavigate} className="mb-10 flex items-center gap-2.5 px-4" aria-label="DevMata 홈">
+    <NavLink to="/" onClick={onNavigate} className="mb-10 flex items-center gap-2.5 px-4" aria-label="DevMata AI 홈">
       <div className="flex size-9 items-center justify-center rounded-xl bg-accent-strong"><Layers3 className="size-5 text-white" strokeWidth={2.2} /></div>
-      <span className="text-[23px] font-bold tracking-tight text-fg">DevMata</span>
+      <span className="text-[23px] font-bold tracking-tight text-fg">DevMata AI</span>
     </NavLink>
     <div className="space-y-7">
       {['나의 하루', '기록과 발견'].map(group => <div key={group}>

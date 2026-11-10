@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
 cd /d "%~dp0"
-echo DevMate AI - MySQL 백업
+echo DevMata AI - MySQL 백업
 node scripts\backup-db.mjs
 echo.
 pause

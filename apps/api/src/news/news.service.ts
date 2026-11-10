@@ -187,7 +187,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     return this.running;
   }
   private async collect() {
-    const parser = new Parser({ timeout: 12000, maxRedirects: 3, headers: { 'User-Agent': 'DevMateAI/0.1 RSS Reader' } });
+    const parser = new Parser({ timeout: 12000, maxRedirects: 3, headers: { 'User-Agent': 'DevMataAI/0.1 RSS Reader' } });
     let added = 0;
     const sources = await Promise.all(NEWS_FEEDS.map(async source => {
       try {

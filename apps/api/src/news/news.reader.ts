@@ -35,7 +35,7 @@ async function download(url: URL, signal: AbortSignal): Promise<{ html: string; 
   return new Promise((resolve, reject) => {
     const request = (url.protocol === 'https:' ? httpsRequest : httpRequest)(url, {
       signal, agent: false, family: address.family,
-      headers: { 'User-Agent': 'DevMateAI/0.1 Article Reader', Accept: 'text/html,application/xhtml+xml', 'Accept-Encoding': 'identity' },
+      headers: { 'User-Agent': 'DevMataAI/0.1 Article Reader', Accept: 'text/html,application/xhtml+xml', 'Accept-Encoding': 'identity' },
       // Connect only to the address already checked, retaining the original host for TLS and Host.
       lookup: (_hostname, _options, callback) => callback(null, address.address, address.family),
     }, response => {

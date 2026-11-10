@@ -78,7 +78,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
       const claimed = await this.db.notification.updateMany({ where: { id: row.id, emailSentAt: null, emailAttempts: row.emailAttempts, OR: [{ nextEmailAttemptAt: null }, { nextEmailAttemptAt: { lte: now } }] }, data: { emailAttempts: { increment: 1 }, nextEmailAttemptAt: lease } });
       if (!claimed.count) continue;
       try {
-        await this.mail.send(row.user.email, `[DevMata] ${row.title}`, `${row.body}\n\n${this.mail.publicUrl(row.href).href}\n\n알림 설정은 DevMata 설정 화면에서 바꿀 수 있습니다.`);
+        await this.mail.send(row.user.email, `[DevMata AI] ${row.title}`, `${row.body}\n\n${this.mail.publicUrl(row.href).href}\n\n알림 설정은 DevMata AI 설정 화면에서 바꿀 수 있습니다.`);
         await this.db.notification.updateMany({ where: { id: row.id }, data: { emailSentAt: new Date(), nextEmailAttemptAt: null } });
       } catch { Logger.warn('마감 알림 메일 발송 실패. 최대 3회 재시도합니다.', 'Notifications'); }
     }

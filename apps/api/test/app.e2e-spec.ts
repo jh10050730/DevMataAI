@@ -8,7 +8,7 @@ import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
 import { PrismaService } from '../src/prisma/prisma.service';
 
-describe('DevMate API (e2e)', () => {
+describe('DevMata AI API (e2e)', () => {
   let app: INestApplication;
   let tokenA: string;
   let tokenB: string;

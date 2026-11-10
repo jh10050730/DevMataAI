@@ -1,8 +1,8 @@
-# DevMate AI 개인정보처리방침
+# DevMata AI 개인정보처리방침
 
 최종 수정일: 2026-11-10
 
-DevMate AI는 각 사용자가 **자기 PC에 직접 설치해 실행하는 개인용 오픈소스 앱**입니다.
+DevMata AI는 각 사용자가 **자기 PC에 직접 설치해 실행하는 개인용 오픈소스 앱**입니다.
 개발자가 운영하는 서버는 없으며, 앱이 다루는 모든 데이터는 사용자의 PC에서만 처리·저장됩니다.
 개발자는 어떤 사용자 데이터도 받거나 볼 수 없습니다.
 
@@ -28,7 +28,7 @@ Google 계정을 연결하면 앱은 다음 권한만 요청합니다.
 - Google 데이터를 판매하거나, 광고에 사용하거나, 제3자에게 제공하지 않습니다.
 - Google 데이터를 AI 모델 학습에 사용하지 않습니다.
 
-DevMate AI의 Google API 사용과 데이터 처리는
+DevMata AI의 Google API 사용과 데이터 처리는
 [Google API 서비스 사용자 데이터 정책](https://developers.google.com/terms/api-services-user-data-policy)의
 제한적 사용(Limited Use) 요구 사항을 따릅니다.
 
@@ -52,13 +52,13 @@ Notion·GitHub 연동은 사용자가 직접 발급해 `.env`에 넣은 토큰�
 
 ## Summary (English)
 
-DevMate AI is a self-hosted, open-source personal app that each user runs on their own computer.
+DevMata AI is a self-hosted, open-source personal app that each user runs on their own computer.
 There is no developer-operated server; the developer never receives any user data.
 
 - Google scopes: `openid`, `email`, and `calendar.readonly`. Calendar events are read only, never created, modified, or deleted.
 - Calendar data and encrypted OAuth tokens are stored only in the MySQL database on the user's own computer.
 - When the user runs an AI feature, relevant event details are sent to Anthropic through the user's own Claude account or API key. Otherwise, calendar data never leaves the user's computer.
 - Google user data is not sold, not used for advertising, not shared with third parties, and not used to train AI models.
-- DevMate AI's use of information received from Google APIs adheres to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements.
+- DevMata AI's use of information received from Google APIs adheres to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements.
 - Users can disconnect in Settings (the token is revoked and deleted) or revoke access at https://myaccount.google.com/connections.
 - Contact: https://github.com/jh10050730/DevMataAI/issues
