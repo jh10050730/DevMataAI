@@ -4,12 +4,55 @@
   "version": "0.1.0",
   "private": true,
   "description": "DevMata AI Windows 데스크톱 앱 (Electron)",
+  "author": "DevMata AI",
+  "homepage": "https://github.com/jh10050730/DevMataAI",
   "main": "src/main.cjs",
   "scripts": {
     "start": "electron .",
-    "test": "node --test src/*.test.cjs"
+    "stage": "node scripts/stage.cjs",
+    "dist": "node scripts/dist.cjs",
+    "test": "node --test src/*.test.cjs scripts/*.test.cjs"
   },
   "devDependencies": {
-    "electron": "44.9.3"
+    "electron": "44.9.3",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "ai.devmata.desktop",
+    "productName": "DevMata AI",
+    "copyright": "DevMata AI",
+    "files": [
+      "package.json",
+      "src/**/*",
+      "!src/**/*.test.cjs"
+    ],
+    "asar": true,
+    "npmRebuild": false,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DevMata AI",
+      "uninstallDisplayName": "DevMata AI",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "DevMata-AI-Setup-${version}.${ext}"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "jh10050730",
+      "repo": "DevMataAI"
+    }
   }
 }

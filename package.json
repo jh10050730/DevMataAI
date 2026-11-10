@@ -12,7 +12,7 @@
     "setup": "npm run db:generate -w apps/api && npm run db:deploy -w apps/api",
     "db:backup": "node scripts/backup-db.mjs",
     "db:verify-backup": "node scripts/verify-backup.mjs",
-    "test:ops": "node --test scripts/*.test.mjs apps/desktop/src/*.test.cjs",
+    "test:ops": "node --test scripts/*.test.mjs apps/desktop/src/*.test.cjs apps/desktop/scripts/*.test.cjs",
     "server:start": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-server.ps1",
     "server:status": "node scripts/server-control.mjs",
     "server:stop": "node scripts/server-control.mjs stop",
@@ -23,6 +23,7 @@
     "dev:web": "npm run dev -w apps/web",
     "desktop": "npm run build && npm run start -w apps/desktop",
     "desktop:start": "npm run start -w apps/desktop",
+    "desktop:dist": "npm run build && npm run stage -w apps/desktop && npm run dist -w apps/desktop",
     "build": "npm run build -w apps/api && npm run build -w apps/web",
     "typecheck": "npm run typecheck -w apps/api && npm run typecheck -w apps/web",
     "test": "npm run test -w apps/api && npm run test -w apps/web"

@@ -73,4 +73,39 @@ function logoBitmap(size) {
   return buf;
 }
 
-module.exports = { logoSvg, logoBitmap };
+const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+function crc32(buf) {
+  let c = 0xffffffff;
+  for (const byte of buf) c = CRC_TABLE[(c ^ byte) & 255] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+function pngChunk(type, data) {
+  const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
+  const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+  const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(body));
+  return Buffer.concat([len, body, crc]);
+}
+
+/** size x size 로고 PNG (RGBA). 설치 파일 아이콘(.ico)에 쓴다. */
+function logoPng(size) {
+  const { deflateSync } = require('node:zlib');
+  const src = logoBitmap(size);
+  const raw = Buffer.alloc(size * (1 + size * 4));
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const i = (y * size + x) * 4; const o = y * (1 + size * 4) + 1 + x * 4;
+    const a = src[i + 3]; const un = v => (a ? Math.min(255, Math.round((v * 255) / a)) : 0); // 미리 곱한 알파 되돌리기
+    raw[o] = un(src[i + 2]); raw[o + 1] = un(src[i + 1]); raw[o + 2] = un(src[i]); raw[o + 3] = a;
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(size, 0); ihdr.writeUInt32BE(size, 4); ihdr[8] = 8; ihdr[9] = 6; // 8bit RGBA
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    pngChunk('IHDR', ihdr), pngChunk('IDAT', deflateSync(raw)), pngChunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+module.exports = { logoSvg, logoBitmap, logoPng };
