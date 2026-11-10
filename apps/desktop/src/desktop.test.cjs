@@ -72,3 +72,17 @@ test('logo matches the web favicon and renders a bitmap', () => {
   for (let i = 0; i < px.length; i += 4) if (px[i] === 255 && px[i + 1] === 255 && px[i + 2] === 255) white++;
   assert.ok(white > 30, '흰 레이어 아이콘이 그려져야 합니다');
 });
+
+test('app defaults fill in Google keys without overriding real settings', () => {
+  const { apiEnv, loadAppDefaults } = require('./paths.cjs');
+  const dir = mkdtempSync(join(tmpdir(), 'devmata-defaults-'));
+  try {
+    writeFileSync(join(dir, 'app-defaults.json'), JSON.stringify({ GOOGLE_CLIENT_ID: 'cid', GOOGLE_CLIENT_SECRET: 'cs', NOTION_TOKEN: 'leak' }));
+    const defaults = loadAppDefaults(dir);
+    assert.deepEqual(defaults, { GOOGLE_CLIENT_ID: 'cid', GOOGLE_CLIENT_SECRET: 'cs' }); // 허용된 키만
+    const paths = { web: 'w', migrations: 'm' }; const config = { port: 47390, jwtSecret: 's'.repeat(64) };
+    assert.equal(apiEnv({ dataDir: dir, config, paths, base: {}, defaults }).GOOGLE_CLIENT_ID, 'cid');
+    assert.equal(apiEnv({ dataDir: dir, config, paths, base: { GOOGLE_CLIENT_ID: 'mine' }, defaults }).GOOGLE_CLIENT_ID, 'mine');
+    assert.deepEqual(loadAppDefaults(join(dir, 'none')), {});
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});

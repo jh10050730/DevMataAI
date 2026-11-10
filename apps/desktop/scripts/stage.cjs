@@ -11,6 +11,7 @@ const { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } = r
 const { dirname, join, relative, resolve, sep } = require('node:path');
 const { logoPng } = require('../src/brand.cjs');
 const { buildPaths } = require('./build-paths.cjs');
+const { APP_DEFAULT_KEYS } = require('../src/paths.cjs');
 
 const repo = resolve(__dirname, '..', '..', '..');
 const apiDir = join(repo, 'apps', 'api');
@@ -99,6 +100,26 @@ function writeIco(file, sizes) {
   writeFileSync(file, Buffer.concat([header, ...images.map(i => i.png)]));
 }
 
+/** .env 의 KEY=value / KEY="value" 줄 읽기 (주석·빈 줄 무시) */
+function parseEnvFile(text) {
+  const out = {};
+  for (const line of text.replace(/^﻿/, '').split(/\r?\n/)) {
+    const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/.exec(line);
+    if (!m || line.trim().startsWith('#')) continue;
+    out[m[1]] = m[2].replace(/^(['"])(.*)\1$/, '$2');
+  }
+  return out;
+}
+
+/**
+ * 설치본에 넣을 앱 기본값 (Google OAuth 클라이언트). 환경변수가 우선, 없으면 apps/api/.env.
+ * APP_DEFAULT_KEYS 밖의 값(개인 토큰 등)은 절대 넣지 않는다.
+ */
+function appDefaults(env = process.env, envFile = join(apiDir, '.env')) {
+  const file = existsSync(envFile) ? parseEnvFile(readFileSync(envFile, 'utf8')) : {};
+  return Object.fromEntries(APP_DEFAULT_KEYS.map(k => [k, env[k] || file[k] || '']).filter(([, v]) => v));
+}
+
 function main() {
   for (const need of [join(apiDir, 'dist', 'main.js'), join(webDist, 'index.html'), join(repo, 'node_modules', '.prisma', 'client', 'query_engine-windows.dll.node')]) {
     if (!existsSync(need)) throw new Error(`빌드 결과가 없습니다: ${relative(repo, need)}\nnpm run build 와 npm run setup 을 먼저 실행하세요.`);
@@ -111,6 +132,11 @@ function main() {
   cpSync(join(apiDir, 'prisma', 'migrations'), join(stage, 'api', 'prisma', 'migrations'), { recursive: true });
   const apiPkg = JSON.parse(readFileSync(join(apiDir, 'package.json'), 'utf8'));
   writeFileSync(join(stage, 'api', 'package.json'), JSON.stringify({ name: apiPkg.name, version: apiPkg.version, private: true, dependencies: apiPkg.dependencies }, null, 2));
+  // Google 연동용 앱 기본값 (값은 화면에 출력하지 않는다)
+  const defaults = appDefaults();
+  writeFileSync(join(stage, 'api', 'app-defaults.json'), JSON.stringify(defaults, null, 2));
+  const google = APP_DEFAULT_KEYS.every(k => defaults[k]);
+  if (!google) console.warn('경고: GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET 이 없어 이 설치본에서는 Google 캘린더 연동이 꺼집니다.');
 
   // 패키지
   const packages = collectPackages();
@@ -128,11 +154,11 @@ function main() {
 
   // 개발용 비밀값이 섞이지 않았는지 확인
   for (const f of ['.env', join('api', '.env')]) if (existsSync(join(stage, f))) throw new Error(`설치본에 ${f} 가 들어갔습니다`);
-  console.log(`설치본 파일 준비 완료: 패키지 ${packages.length}개 → ${stage}`);
+  console.log(`설치본 파일 준비 완료: 패키지 ${packages.length}개, Google 연동 ${google ? '포함' : '없음'} → ${stage}`);
 }
 
 if (require.main === module) {
   try { main(); } catch (error) { console.error(error.message); process.exit(1); }
 }
 
-module.exports = { collectPackages, findPackage, writeIco };
+module.exports = { appDefaults, collectPackages, findPackage, parseEnvFile, writeIco };

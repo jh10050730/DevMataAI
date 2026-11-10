@@ -26,3 +26,17 @@ test('icon file holds every size as PNG', () => {
     assert.equal(basename(file), 'icon.ico');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('installer defaults carry only the Google app client, never personal tokens', () => {
+  const { appDefaults, parseEnvFile } = require('./stage.cjs');
+  const { writeFileSync } = require('node:fs');
+  const dir = mkdtempSync(join(tmpdir(), 'devmata-env-'));
+  try {
+    const envFile = join(dir, '.env');
+    writeFileSync(envFile, '﻿# 주석\nGOOGLE_CLIENT_ID="id-from-file"\nGOOGLE_CLIENT_SECRET=secret-from-file\nNOTION_TOKEN="ntn_personal"\nGITHUB_TOKEN=ghp_personal\n');
+    assert.equal(parseEnvFile('A="x y"\n# B=1\nC=\'z\'').A, 'x y');
+    assert.deepEqual(appDefaults({}, envFile), { GOOGLE_CLIENT_ID: 'id-from-file', GOOGLE_CLIENT_SECRET: 'secret-from-file' });
+    assert.equal(appDefaults({ GOOGLE_CLIENT_ID: 'id-from-env' }, envFile).GOOGLE_CLIENT_ID, 'id-from-env');
+    assert.deepEqual(appDefaults({}, join(dir, 'missing.env')), {});
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});

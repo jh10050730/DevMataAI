@@ -2,7 +2,7 @@
 const { app, BrowserWindow, Menu, Tray, dialog, nativeImage, shell } = require('electron');
 const { join } = require('node:path');
 const { loadConfig } = require('./config.cjs');
-const { appPaths, apiEnv, isAppUrl, isExternalUrl } = require('./paths.cjs');
+const { appPaths, apiEnv, loadAppDefaults, isAppUrl, isExternalUrl } = require('./paths.cjs');
 const { startApi } = require('./server.cjs');
 const { trayIcon, windowIcon } = require('./icon.cjs');
 
@@ -39,7 +39,7 @@ async function start() {
   const paths = appPaths({ packaged: app.isPackaged, resourcesPath: process.resourcesPath });
   createTray();
   if (!startHidden) createWindow(loadingPage());
-  api = await startApi({ paths, env: apiEnv({ dataDir, config, paths }), port: config.port, logDir: join(dataDir, 'logs') });
+  api = await startApi({ paths, env: apiEnv({ dataDir, config, paths, defaults: loadAppDefaults(paths.apiRoot) }), port: config.port, logDir: join(dataDir, 'logs') });
   api.on('exit', code => { if (!quitting) fail(new Error(`API 서버가 예기치 않게 종료되었습니다 (코드 ${code}).\n로그: ${join(dataDir, 'logs', 'api.log')}`)); });
   app.devmataUrl = `http://localhost:${config.port}/`;
   app.devmataPort = config.port;

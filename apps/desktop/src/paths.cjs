@@ -1,5 +1,6 @@
 // 개발 실행과 설치본에서 API·웹·마이그레이션 파일 위치를 찾는다.
 // 설치본 구조(5단계 electron-builder 에서 만든다): resources/api/{dist,node_modules,prisma/migrations}, resources/web
+const { readFileSync } = require('node:fs');
 const { join, resolve } = require('node:path');
 
 function appPaths({ packaged, resourcesPath, sourceDir = __dirname }) {
@@ -12,10 +13,23 @@ function appPaths({ packaged, resourcesPath, sourceDir = __dirname }) {
   return { apiRoot: api, apiMain: join(api, 'dist', 'main.js'), migrations: join(api, 'prisma', 'migrations'), web: join(repo, 'apps', 'web', 'dist') };
 }
 
-/** API 프로세스에 넘길 환경변수. 개발용 .env 보다 우선한다. */
-function apiEnv({ dataDir, config, paths, base = process.env }) {
+// 설치 파일에 함께 넣는 앱 기본값 (resources/api/app-defaults.json). 앱 자체의 식별 정보만 허용한다.
+// 개인 토큰(Notion·GitHub 등)은 절대 넣지 않는다.
+const APP_DEFAULT_KEYS = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'];
+
+/** app-defaults.json 을 읽는다. 없거나 깨졌으면 빈 값 (Google 연동만 안 될 뿐 앱은 동작) */
+function loadAppDefaults(apiRoot) {
+  try {
+    const raw = JSON.parse(readFileSync(join(apiRoot, 'app-defaults.json'), 'utf8'));
+    return Object.fromEntries(APP_DEFAULT_KEYS.filter(k => typeof raw[k] === 'string' && raw[k]).map(k => [k, raw[k]]));
+  } catch { return {}; }
+}
+
+/** API 프로세스에 넘길 환경변수. 개발용 .env 보다 우선한다. 앱 기본값은 이미 있는 환경변수를 덮어쓰지 않는다. */
+function apiEnv({ dataDir, config, paths, base = process.env, defaults = {} }) {
   const origin = `http://localhost:${config.port}`;
   return {
+    ...defaults,
     ...base,
     ELECTRON_RUN_AS_NODE: '1',
     NODE_ENV: 'production',
@@ -41,4 +55,4 @@ function isExternalUrl(url) {
   try { return ['http:', 'https:'].includes(new URL(url).protocol); } catch { return false; }
 }
 
-module.exports = { appPaths, apiEnv, isAppUrl, isExternalUrl };
+module.exports = { APP_DEFAULT_KEYS, appPaths, apiEnv, loadAppDefaults, isAppUrl, isExternalUrl };
