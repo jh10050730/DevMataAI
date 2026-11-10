@@ -13,6 +13,7 @@ import StudyPage from './pages/StudyPage';
 import ProjectsPage from './pages/ProjectsPage';
 import PasswordResetPage from './pages/PasswordResetPage';
 import ClaudeSetup, { ClaudeOnboardingGate } from './components/ClaudeSetup';
+import ConnectionBanner from './components/ConnectionBanner';
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -22,6 +23,15 @@ function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
+  return (
+    <>
+      <ConnectionBanner />
+      <AppRoutes />
+    </>
+  );
+}
+
+function AppRoutes() {
   const { user, loading } = useAuth();
   if (loading) return <FullPageSpinner />;
 
