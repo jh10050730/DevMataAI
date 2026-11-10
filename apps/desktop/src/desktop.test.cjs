@@ -58,3 +58,14 @@ test('port check detects a busy port', async () => {
   await new Promise(r => server.close(r));
   assert.equal(await portFree(port), true);
 });
+
+test('logo matches the web favicon and renders a bitmap', () => {
+  const { logoSvg, logoBitmap } = require('./brand.cjs');
+  const favicon = readFileSync(join(__dirname, '..', '..', 'web', 'public', 'favicon.svg'), 'utf8');
+  assert.equal(favicon, logoSvg(), 'favicon.svg 가 brand.cjs 와 다릅니다. logoSvg() 로 다시 만드세요.');
+  const px = logoBitmap(32);
+  assert.equal(px.length, 32 * 32 * 4);
+  assert.equal(px[3], 0); // 둥근 모서리 바깥은 투명
+  const center = (16 * 32 + 16) * 4;
+  assert.deepEqual([...px.subarray(center, center + 4)], [255, 255, 255, 255]); // 가운데 반짝임은 흰색
+});

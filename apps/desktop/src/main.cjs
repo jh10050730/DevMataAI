@@ -4,7 +4,7 @@ const { join } = require('node:path');
 const { loadConfig } = require('./config.cjs');
 const { appPaths, apiEnv, isAppUrl, isExternalUrl } = require('./paths.cjs');
 const { startApi } = require('./server.cjs');
-const { trayIcon } = require('./icon.cjs');
+const { trayIcon, windowIcon } = require('./icon.cjs');
 
 const APP_NAME = 'DevMata AI';
 app.setName(APP_NAME);
@@ -49,7 +49,7 @@ async function start() {
 function createWindow(firstUrl) {
   win = new BrowserWindow({
     width: 1280, height: 860, minWidth: 380, minHeight: 600,
-    title: APP_NAME, icon: trayIcon(), backgroundColor: '#f2f4f6', show: false,
+    title: APP_NAME, icon: windowIcon(), backgroundColor: '#f2f4f6', show: false,
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
   win.once('ready-to-show', () => win.show());
