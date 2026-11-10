@@ -2,6 +2,7 @@ import { AlertCircle, ArrowUpRight, CalendarDays, CheckCircle2, Clock, FolderGit
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import DueReviewCard from '../components/DueReviewCard';
+import GettingStartedCard from '../components/GettingStartedCard';
 import TaskItem from '../components/TaskItem';
 import { Card, EmptyState, ErrorState, ProgressBar, Skeleton, cn } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
@@ -70,6 +71,7 @@ export default function DashboardPage() {
         <h2 className="text-[28px] font-bold leading-snug tracking-tight sm:text-[32px]">{user?.name}님, {greeting}</h2>
         <p className="mt-2 text-[15px] text-muted">오늘의 일정과 할 일을 한눈에 확인해보세요.</p>
       </header>
+      {user && <GettingStartedCard userId={user.id} />}
       <section className="workspace-card flex flex-wrap items-center gap-4 rounded-[24px] bg-surface p-5 sm:gap-5 sm:p-7">
         <span className="flex size-14 shrink-0 items-center justify-center rounded-[20px] bg-accent-soft"><Sparkles className="size-7 text-accent" strokeWidth={2} /></span>
         <div className="min-w-0 flex-1 basis-48">
