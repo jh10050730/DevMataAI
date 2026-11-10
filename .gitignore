@@ -11,6 +11,10 @@ coverage/
 # 로컬 SQLite DB
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
+data/
+apps/api/.test/
 
 .DS_Store
 .vscode/*

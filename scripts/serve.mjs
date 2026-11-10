@@ -32,7 +32,7 @@ if (!existsSync(join(webRoot, 'index.html')) || !existsSync(join(apiRoot, 'dist/
       log(`API 종료 (${code})`); child = undefined;
       if (Date.now() - started > 60000) attempts = 0;
       if (!stopping && attempts < 10) retry = setTimeout(startApi, 10000);
-      else if (!stopping) log('API 자동 재시도 중단. MySQL 및 .env 확인 후 서버를 재시작하세요.');
+      else if (!stopping) log('API 자동 재시도 중단. .env 와 DB 파일(DATABASE_URL) 확인 후 서버를 재시작하세요.');
     });
   }
   const server = createServer(async (req, res) => {

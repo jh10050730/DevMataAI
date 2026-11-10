@@ -17,6 +17,6 @@ if (process.argv[2] === 'stop') {
   try { const response = await fetch('http://127.0.0.1:5173/__devmate/status', { signal: AbortSignal.timeout(2500) }); const body = await response.json(); if (body.app === 'devmate-runtime') runtime = { running: true, ...body }; } catch {}
   const startup = read(join(root, '.runtime/autostart.json'));
   const backups = join(root, 'backups');
-  const latest = existsSync(backups) ? readdirSync(backups).filter(n => /-\d{8}-\d{6}\.sql$/.test(n)).sort().at(-1) ?? null : null;
+  const latest = existsSync(backups) ? readdirSync(backups).filter(n => /^devmata-\d{8}-\d{6}\.db$/.test(n)).sort().at(-1) ?? null : null;
   console.log(JSON.stringify({ ...runtime, autostart: !!startup && existsSync(startup.shortcut), latestBackup: latest, verification: read(join(backups, 'last-verification.json')), log: '.runtime/server.log' }, null, 2));
 }

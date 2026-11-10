@@ -1,77 +1,26 @@
-// MySQL DB 백업: apps/api/.env 의 DATABASE_URL 을 읽어 backups/<db>-YYYYMMDD-HHMMSS.sql 로 저장한다.
-// 비밀번호는 명령줄이 아닌 MYSQL_PWD 환경변수로만 넘기고 화면에 출력하지 않는다.
+// SQLite DB 백업: 실행 중인 앱이 쓰고 있어도 일관된 사본을 backups/devmata-YYYYMMDD-HHMMSS.db 로 만든다 (VACUUM INTO).
 // 사용: npm run db:backup   (또는 backup-db.bat 더블클릭)
-import { spawn } from 'node:child_process';
-import { createWriteStream, existsSync, mkdirSync, readFileSync, statSync, unlinkSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+// 복원: 앱을 끈 뒤 백업 파일을 DB 파일 위치(.env 의 DATABASE_URL)에 복사한다.
+import { existsSync, mkdirSync, statSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { backupName, databaseFile, openDatabase, root, sqlString } from './db-tools.mjs';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-
-function readDatabaseUrl() {
-  const envFile = join(root, 'apps', 'api', '.env');
-  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
-  if (!existsSync(envFile)) throw new Error('apps/api/.env 가 없습니다.');
-  for (const line of readFileSync(envFile, 'utf8').split(/\r?\n/)) {
-    const m = line.match(/^\s*DATABASE_URL\s*=\s*(.*)\s*$/);
-    if (m) return m[1].replace(/^(['"])(.*)\1$/, '$2');
-  }
-  throw new Error('apps/api/.env 에 DATABASE_URL 이 없습니다.');
+export async function backup(source, outDir) {
+  if (!existsSync(source)) throw new Error(`DB 파일이 없습니다: ${source}`);
+  mkdirSync(outDir, { recursive: true });
+  const target = join(outDir, backupName());
+  if (existsSync(target)) throw new Error(`같은 이름의 백업이 이미 있습니다: ${target}`);
+  const db = await openDatabase(source, { readOnly: true });
+  try { db.exec(`VACUUM INTO ${sqlString(target)};`); } finally { db.close(); }
+  return target;
 }
 
-function findMysqldump() {
-  if (process.env.MYSQLDUMP) return process.env.MYSQLDUMP;
-  const candidates = ['8.4', '9.0', '8.0'].map((v) => `C:\\Program Files\\MySQL\\MySQL Server ${v}\\bin\\mysqldump.exe`);
-  return candidates.find((p) => existsSync(p)) ?? 'mysqldump'; // 없으면 PATH 에서 찾기
+async function main() {
+  const source = databaseFile();
+  const target = await backup(source, join(root, 'backups'));
+  console.log(`백업 완료: ${target} (${Math.round(statSync(target).size / 1024)} KB)`);
+  console.log('복원: 앱(서버)을 끈 뒤 이 파일을 DB 위치에 복사하세요 →', source);
 }
 
-const url = new URL(readDatabaseUrl());
-if (url.protocol !== 'mysql:') throw new Error('DATABASE_URL 이 MySQL 주소가 아닙니다.');
-const db = decodeURIComponent(url.pathname.replace(/^\//, ''));
-if (!/^[A-Za-z0-9_]+$/.test(db)) throw new Error(`DB 이름이 올바르지 않습니다: ${db}`);
-
-const stamp = new Date().toLocaleString('sv-SE').replace(/[-: ]/g, '').replace(/^(\d{8})(\d{6})$/, '$1-$2');
-const outDir = join(root, 'backups');
-mkdirSync(outDir, { recursive: true });
-const outFile = join(outDir, `${db}-${stamp}.sql`);
-
-const args = [
-  `--host=${url.hostname || 'localhost'}`,
-  `--port=${url.port || '3306'}`,
-  `--user=${decodeURIComponent(url.username)}`,
-  '--single-transaction', // InnoDB: 잠금 없이 일관된 스냅샷
-  '--routines',
-  '--triggers',
-  '--default-character-set=utf8mb4',
-  '--no-tablespaces', // PROCESS 권한 없이 백업
-  '--databases',
-  db,
-];
-
-const out = createWriteStream(outFile);
-const child = spawn(findMysqldump(), args, {
-  env: { ...process.env, MYSQL_PWD: decodeURIComponent(url.password) },
-  stdio: ['ignore', 'pipe', 'pipe'],
-});
-let stderr = '';
-child.stdout.pipe(out);
-child.stderr.on('data', (d) => (stderr += d));
-child.on('error', (e) => {
-  console.error(`mysqldump 를 실행할 수 없습니다 (${e.message}). MySQL 설치 경로를 MYSQLDUMP 환경변수로 지정하세요.`);
-  process.exitCode = 1;
-});
-child.on('close', (code) => {
-  out.end(() => {
-    // 비밀번호 사용 경고 외의 메시지만 표시
-    const msg = stderr.split(/\r?\n/).filter((l) => l && !/password on the command line|Using a password/i.test(l)).join('\n');
-    if (code !== 0) {
-      if (existsSync(outFile)) unlinkSync(outFile);
-      console.error(`백업 실패 (exit ${code})\n${msg}`);
-      process.exitCode = 1;
-      return;
-    }
-    const kb = Math.round(statSync(outFile).size / 1024);
-    console.log(`백업 완료: ${outFile} (${kb} KB)`);
-    console.log(`복원: mysql -u ${decodeURIComponent(url.username)} -p < "${outFile}"`);
-  });
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) main().catch(e => { console.error(e.message); process.exitCode = 1; });
