@@ -26,3 +26,5 @@ apps/api/.test/
 # DB 백업 파일 (개인 데이터 포함)
 backups/
 .runtime/
+# 데스크톱 설치 파일 빌드 결과 (빌드는 %LOCALAPPDATA%\DevMataAI-build 에서 한다)
+apps/desktop/release/
