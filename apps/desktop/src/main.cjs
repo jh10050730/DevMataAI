@@ -1,0 +1,102 @@
+// DevMata AI 데스크톱 앱: API 서버를 띄우고 앱 창에 화면을 연다. 창을 닫으면 트레이로 숨고, 트레이 메뉴에서 종료한다.
+const { app, BrowserWindow, Menu, Tray, dialog, nativeImage, shell } = require('electron');
+const { join } = require('node:path');
+const { loadConfig } = require('./config.cjs');
+const { appPaths, apiEnv, isAppUrl, isExternalUrl } = require('./paths.cjs');
+const { startApi } = require('./server.cjs');
+const { trayIcon } = require('./icon.cjs');
+
+const APP_NAME = 'DevMata AI';
+app.setName(APP_NAME);
+// 개발 실행에서도 설치본과 같은 데이터 폴더(%APPDATA%\DevMata AI)를 쓴다.
+app.setPath('userData', join(app.getPath('appData'), APP_NAME));
+app.setAppUserModelId('ai.devmata.desktop');
+
+let win = null;
+let tray = null;
+let api = null;
+let quitting = false;
+const startHidden = process.argv.includes('--hidden');
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', () => showWindow());
+  app.whenReady().then(start).catch(fail);
+}
+
+function fail(error) {
+  dialog.showErrorBox(`${APP_NAME} 시작 실패`, error instanceof Error ? error.message : String(error));
+  quitting = true;
+  api?.kill();
+  app.quit();
+}
+
+async function start() {
+  Menu.setApplicationMenu(null);
+  const dataDir = app.getPath('userData');
+  const config = loadConfig(dataDir);
+  const paths = appPaths({ packaged: app.isPackaged, resourcesPath: process.resourcesPath });
+  createTray();
+  if (!startHidden) createWindow(loadingPage());
+  api = await startApi({ paths, env: apiEnv({ dataDir, config, paths }), port: config.port, logDir: join(dataDir, 'logs') });
+  api.on('exit', code => { if (!quitting) fail(new Error(`API 서버가 예기치 않게 종료되었습니다 (코드 ${code}).\n로그: ${join(dataDir, 'logs', 'api.log')}`)); });
+  app.devmataUrl = `http://localhost:${config.port}/`;
+  app.devmataPort = config.port;
+  if (win) await win.loadURL(app.devmataUrl);
+}
+
+function createWindow(firstUrl) {
+  win = new BrowserWindow({
+    width: 1280, height: 860, minWidth: 380, minHeight: 600,
+    title: APP_NAME, icon: trayIcon(), backgroundColor: '#f2f4f6', show: false,
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
+  });
+  win.once('ready-to-show', () => win.show());
+  // 앱 주소 밖(Google 로그인, 뉴스 원문, GitHub 등)은 기본 브라우저로 연다. Google 은 앱 안 로그인을 막는다.
+  win.webContents.setWindowOpenHandler(({ url }) => { if (isExternalUrl(url)) void shell.openExternal(url); return { action: 'deny' }; });
+  win.webContents.on('will-navigate', (event, url) => {
+    if (app.devmataPort && isAppUrl(url, app.devmataPort)) return;
+    event.preventDefault();
+    if (isExternalUrl(url)) void shell.openExternal(url);
+  });
+  win.on('close', event => { if (!quitting) { event.preventDefault(); win.hide(); } });
+  win.on('closed', () => { win = null; });
+  void win.loadURL(firstUrl);
+}
+
+function showWindow() {
+  if (!win) createWindow(app.devmataUrl || loadingPage());
+  else { if (win.isMinimized()) win.restore(); win.show(); win.focus(); }
+}
+
+function createTray() {
+  tray = new Tray(trayIcon());
+  tray.setToolTip(APP_NAME);
+  tray.on('click', showWindow);
+  const refresh = () => tray.setContextMenu(Menu.buildFromTemplate([
+    { label: `${APP_NAME} 열기`, click: showWindow },
+    { type: 'separator' },
+    {
+      label: 'Windows 시작 시 자동 실행', type: 'checkbox', checked: app.getLoginItemSettings().openAtLogin,
+      // 설치본에서만 의미가 있다 (개발 실행은 electron.exe 를 등록하게 됨).
+      enabled: app.isPackaged,
+      click: item => { app.setLoginItemSettings({ openAtLogin: item.checked, args: ['--hidden'] }); refresh(); },
+    },
+    { type: 'separator' },
+    { label: '종료', click: () => { quitting = true; app.quit(); } },
+  ]));
+  refresh();
+}
+
+function loadingPage() {
+  const html = `<!doctype html><meta charset="utf-8"><title>${APP_NAME}</title>
+<body style="margin:0;height:100vh;display:grid;place-items:center;background:#f2f4f6;font-family:'Malgun Gothic',system-ui,sans-serif;color:#191f28">
+<div style="text-align:center"><div style="font-size:28px;font-weight:700">${APP_NAME}</div><div style="margin-top:10px;color:#6b7684">시작하는 중…</div></div></body>`;
+  return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
+}
+
+// 창을 모두 닫아도 트레이에 남아 알림·뉴스 수집을 계속한다.
+app.on('window-all-closed', () => {});
+app.on('before-quit', () => { quitting = true; });
+app.on('will-quit', () => { api?.kill(); });

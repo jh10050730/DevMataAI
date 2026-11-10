@@ -1,0 +1,2 @@
+# 마이그레이션 SQL은 체크섬(줄바꿈 포함)으로 적용 여부를 판단하므로 항상 LF 로 받는다.
+apps/api/prisma/migrations/**/*.sql text eol=lf

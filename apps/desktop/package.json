@@ -1,0 +1,15 @@
+{
+  "name": "@devmate/desktop",
+  "productName": "DevMata AI",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DevMata AI Windows 데스크톱 앱 (Electron)",
+  "main": "src/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test src/*.test.cjs"
+  },
+  "devDependencies": {
+    "electron": "44.9.3"
+  }
+}
