@@ -61,7 +61,9 @@ test('port check detects a busy port', async () => {
 
 test('logo matches the web favicon and renders a bitmap', () => {
   const { logoSvg, logoBitmap } = require('./brand.cjs');
-  const favicon = readFileSync(join(__dirname, '..', '..', 'web', 'public', 'favicon.svg'), 'utf8');
+  const favicon = readFileSync(join(__dirname, '..', '..', 'web', 'public', 'favicon.svg'), 'utf8').replace(/
+/g, '
+');
   assert.equal(favicon, logoSvg(), 'favicon.svg 가 brand.cjs 와 다릅니다. logoSvg() 로 다시 만드세요.');
   const px = logoBitmap(32);
   assert.equal(px.length, 32 * 32 * 4);
