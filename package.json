@@ -12,6 +12,7 @@
     "setup": "npm run db:generate -w apps/api && npm run db:deploy -w apps/api",
     "db:backup": "node scripts/backup-db.mjs",
     "db:verify-backup": "node scripts/verify-backup.mjs",
+    "release": "node scripts/release.mjs",
     "test:ops": "node --test scripts/*.test.mjs apps/desktop/src/*.test.cjs apps/desktop/scripts/*.test.cjs",
     "server:start": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-server.ps1",
     "server:status": "node scripts/server-control.mjs",

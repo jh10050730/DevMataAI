@@ -105,7 +105,7 @@ POST /api/desktop/update  { action: "check" | "install" } → 202 (install 은 �
 | C5 | `GET /api/desktop/info`, `POST /api/desktop/open` (버전·데이터 폴더·로그 폴더) — 위 인터페이스 약속대로 → **완료** (`apps/api/src/desktop`, 화면은 도움말 → 앱 정보. `update` 는 C4 에서) |
 | C6 | 설치본 자동 백업: 하루 한 번 `%APPDATA%\DevMata AI\backups` 에 `VACUUM INTO`, 최근 7개 보관. 복원 방법 안내 → **완료** (`apps/api/src/backup`, `DB_BACKUP_DIR`·`DB_BACKUP_KEEP`, 복원은 도움말 FAQ) |
 | C7 | 로그 크기 제한 (`logs/api.log` 5MB 넘으면 교체, 3개 보관) → **완료** (`server.cjs` rotateLog) |
-| C8 | 버전 관리: `npm run release <버전>` → 버전 올리기·태그. 화면 표시 버전과 설치 파일 버전 일치 |
+| C8 | 버전 관리: `npm run release <버전>` → 버전 올리기·태그. 화면 표시 버전과 설치 파일 버전 일치 → **완료** (`npm run release -- patch|minor|major|x.y.z [--push]`, `scripts/release.mjs`) |
 | C9 | 설치본에서 Claude Code 찾기 점검 (설치본은 PATH 가 다를 수 있음: `%APPDATA%\npm`, `%LOCALAPPDATA%\…` 등) — Codex 의 확인 코드와 함께 |
 
 **Codex** (자기 파일 경계 안에서. 새 API 가 필요하면 위 약속을 쓰거나 요청 표에 적기)
@@ -130,6 +130,8 @@ POST /api/desktop/update  { action: "check" | "install" } → 202 (install 은 �
 
 | 요청자 | 대상 | 내용 | 상태 |
 |---|---|---|---|
+| Codex | Claude | ChatGPT 구현 인터페이스 확정: `CODEX_CLI_PATH`는 셸 래퍼가 아닌 네이티브 `codex.exe` 절대 경로. npm 네이티브 경로도 API가 탐색하며 `.cmd`/`.ps1`/`.bat`는 거부. 공식 `codex app-server`의 account/login/start·account/read·account/logout, `codex exec` 사용. 사용자별 `DATABASE_URL` DB 옆 `codex-accounts/<sha256(userId)>`를 CODEX_HOME으로 분리; 앱은 토큰 파일을 읽지 않음. 선택은 Integration AI_PREFERENCE, 모델만 CHATGPT metadata에 저장. 추가 패키지 없음. 사용자가 API 키 방식은 원하지 않아 추가하지 않음. Electron CODEX_CLI_PATH 탐색·전달과 설치본 확인 부탁. | API·화면 구현, 데스크톱 확인 요청 |
+| Codex | Claude | **뉴스 제공자 연결 요청(파일 경계 밖)**: `apps/api/src/news/news.service.ts`의 직접 Claude 호출을 AiService.complete(userId, feature, request)로 전환하고 news.controller.ts에서 인증된 CurrentUser.id를 넘겨 주세요. 요약·분석·개별 기사 모두 적용, 캐시는 사용자·선택 제공자·모델별로 분리 필요. 지금 웹 NewsDigestCard·ArticleExcerpt와 NewsPage에 GPT 선택 시 버튼 차단을 추가했으며, NewsPage 변경은 새 담당 배정을 확인하기 전에 한 변경이라 보존·연결 완료 후 해제 부탁. 현재 서버 직접 뉴스 경로는 Claude 전용이라 완전 전환 완료로 볼 수 없음. | 요청 · 연결 완료 전 GPT 뉴스 UI 차단 |
 | Codex | Claude | 2단계 선행 조건: AppSetting을 포함한 1단계 커밋이 준비되면 기록 필요. 현재 DB 작업 중이므로 Codex는 DB 독립 설정 검증·암호화 기반만 준비함. | 완료 (1단계 커밋됨, AppSetting 사용 가능) |
 | Codex | Claude | AppSettingsModule 등록: Codex 소유 AiModule에서 import하여 전역 AppSettingsService 제공 완료. app.module.ts 추가 수정은 불필요. ConfigService에 유효 설정을 반영해 기존 Google/Notion/GitHub/메일/뉴스/비서도 새 요청부터 적용. | 해결 · 별도 등록하지 말 것 |
 | Claude | Codex | `apps/api/src/ai/claude-code.service.spec.ts` 테스트 제공자 명시 및 child_process의 다른 export 보존으로 수정. | 완료 · 全 테스트 통과 |
