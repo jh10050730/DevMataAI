@@ -23,8 +23,8 @@ export class IntegrationsController {
         configured: !!(this.config.get('GOOGLE_CLIENT_ID') && this.config.get('GOOGLE_CLIENT_SECRET')),
         detail:
           this.config.get('GOOGLE_CLIENT_ID') && this.config.get('GOOGLE_CLIENT_SECRET')
-            ? '아래에서 Google 계정을 연결하세요 (읽기 전용)'
-            : 'Google OAuth 클라이언트가 설정되지 않았습니다 (apps/api/.env 의 GOOGLE_CLIENT_ID 등).',
+            ? '본인 Google 계정의 기본 캘린더 일정을 읽기 전용으로 가져와요.'
+            : 'Google 연동 키가 없어요. 처음 가입한 관리자 계정으로 설정 → 앱 연결 설정에서 Google 클라이언트 ID·비밀번호를 넣어 주세요.',
       },
     };
   }
