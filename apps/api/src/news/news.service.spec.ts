@@ -1,122 +1,104 @@
+import { HttpException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { execFile } from 'node:child_process';
 import { NewsService } from './news.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AiService } from '../ai/ai.service';
 import { readArticle } from './news.reader';
-jest.mock('node:child_process', () => ({ ...jest.requireActual('node:child_process'), execFile: jest.fn() }));
 jest.mock('./news.reader', () => ({ readArticle: jest.fn() }));
-describe('news AI briefing', () => {
+describe('news through selected AI', () => {
   const article = { id: 'a', title: 'News', excerpt: 'RSS excerpt', source: 'Publisher', url: 'https://example.com/news' };
-  function service(provider = 'claude-cli') {
-    const db = { newsArticle: { findMany: jest.fn().mockResolvedValue([article]) } };
-    return new NewsService(db as unknown as PrismaService, new ConfigService({ AI_PROVIDER: provider }));
-  }
-  function output(value: unknown) {
-    (execFile as unknown as jest.Mock).mockImplementation((_path, _args, _options, callback) => {
-      callback(null, JSON.stringify(value));
-      return { stdin: { on: jest.fn(), end: jest.fn() } };
-    });
-  }
-  beforeEach(() => jest.clearAllMocks());
-  afterEach(() => jest.restoreAllMocks());
-  it('검증된 응답만 반환하고 동일 기사의 중복 AI 호출을 방지', async () => {
-    output({ summary: ['a', 'b', 'c'], articles: [{ id: 'a', importance: '추정', impact: '추정' }] });
-    const news = service();
-    expect(await news.analyze()).toMatchObject({ available: true });
-    await news.analyze();
-    expect(execFile).toHaveBeenCalledTimes(1);
-  });
-  it('브리핑 조회에서 기존 AI 요약과 정확한 원문 출처를 재사용', async () => {
-    output({ summary: ['a', 'b', 'c'], articles: [{ id: 'a', importance: '추정', impact: '추정' }] });
-    const news = service();
-    expect((await news.briefing()).analysis).toBeNull();
-    const analysis = await news.analyze();
-    expect((await news.briefing()).analysis).toEqual(analysis);
-    expect(analysis).toMatchObject({ sourceArticles: [article], generatedAt: expect.any(String) });
-    expect(execFile).toHaveBeenCalledTimes(1);
-  });
-  it('분야별 요약을 유지하고 기사 목록이 바뀌면 이전 요약을 제외', async () => {
-    const economy = { ...article, id: 'economy' };
-    const findMany = jest.fn().mockImplementation(({ where }) => Promise.resolve(where.category === 'ECONOMY' ? [economy] : [article]));
-    const news = new NewsService({ newsArticle: { findMany } } as unknown as PrismaService, new ConfigService({ AI_PROVIDER: 'claude-cli' }));
-    output({ summary: ['a', 'b', 'c'], articles: [{ id: 'a', importance: '추정', impact: '추정' }] });
-    const techAnalysis = await news.analyze('TECH');
-    output({ summary: ['경제 a', '경제 b', '경제 c'], articles: [{ id: 'economy', importance: '추정', impact: '추정' }] });
-    const economyAnalysis = await news.analyze('ECONOMY');
-    expect((await news.briefing('TECH')).analysis).toEqual(techAnalysis);
-    expect((await news.briefing('ECONOMY')).analysis).toEqual(economyAnalysis);
-    await news.analyze('TECH');
-    expect(execFile).toHaveBeenCalledTimes(2);
-    findMany.mockResolvedValue([{ ...article, id: 'new' }]);
-    expect((await news.briefing('TECH')).analysis).toBeNull();
-  });
-  it('유효기간이 지난 요약은 표시하지 않고 다시 생성', async () => {
-    output({ summary: ['a', 'b', 'c'], articles: [{ id: 'a', importance: '추정', impact: '추정' }] });
-    const now = Date.now();
-    jest.spyOn(Date, 'now').mockReturnValue(now);
-    const news = service();
-    await news.analyze();
-    jest.spyOn(Date, 'now').mockReturnValue(now + 3600001);
-    expect((await news.briefing()).analysis).toBeNull();
-    await news.analyze();
-    expect(execFile).toHaveBeenCalledTimes(2);
-  });
-  it('입력에 없는 기사 분석은 거부', async () => {
-    output({ summary: ['a', 'b', 'c'], articles: [{ id: 'invented', importance: 'x', impact: 'y' }] });
-    expect(await service().analyze()).toMatchObject({ available: false });
-  });
-  it('데모 모드에서는 AI 결과를 만들어 내지 않음', async () => {
-    expect(await service('demo').analyze()).toMatchObject({ available: false });
-    expect(execFile).not.toHaveBeenCalled();
-  });
-  it('발췌가 없으면 원문을 가져와 Claude 입력에 포함하고 기사별 요약을 재사용', async () => {
-    const missing = { ...article, excerpt: '' };
-    const db = { newsArticle: { findMany: jest.fn().mockResolvedValue([missing]), findUnique: jest.fn().mockResolvedValue(missing) } };
-    const news = new NewsService(db as unknown as PrismaService, new ConfigService({ AI_PROVIDER: 'claude-cli' }));
+  let news: NewsService; let ai: any; let db: any;
+  let choices: Record<string, { provider: string; model: string }>;
+  const analysis = (id = 'a') => ({ summary: ['a', 'b', 'c'], articles: [{ id, summary: '원문 요약', importance: '추정', impact: '추정' }] });
+  function output(value: unknown) { ai.complete.mockImplementation(async (user: string) => ({ text: JSON.stringify(value), provider: choices[user].provider, model: choices[user].model, demo: false })); }
+  beforeEach(() => {
+    jest.clearAllMocks();
+    choices = { a: { provider: 'claude-cli', model: 'claude-model' }, b: { provider: 'chatgpt', model: 'gpt-model' } };
+    ai = { cacheScope: jest.fn(async (user: string) => ({ provider: choices[user].provider, key: JSON.stringify([user, choices[user]]) })), complete: jest.fn() };
+    db = { newsArticle: { findMany: jest.fn().mockResolvedValue([article]), findUnique: jest.fn().mockResolvedValue(article), count: jest.fn().mockResolvedValue(1) } };
+    news = new NewsService(db as PrismaService, new ConfigService({ AI_PROVIDER: 'demo' }), ai as AiService);
     (readArticle as jest.Mock).mockResolvedValue({ available: true, text: '실제 원문 근거', url: article.url });
-    output({ summary: ['a', 'b', 'c'], articles: [{ id: 'a', summary: '원문에서 확인한 내용입니다.', importance: '추정', impact: '추정' }] });
-    const result = await news.analyze();
-    expect(readArticle).toHaveBeenCalledWith(article.url);
-    const stdin = (execFile as unknown as jest.Mock).mock.results[0].value.stdin;
-    expect(stdin.end.mock.calls[0][0]).toContain('실제 원문 근거');
-    expect(result).toMatchObject({ available: true, sourceArticles: [{ id: 'a', bodyStatus: 'read', summary: '원문에서 확인한 내용입니다.' }] });
-    expect(await news.articleSummary('a')).toMatchObject({ available: true, summary: '원문에서 확인한 내용입니다.' });
-    expect(execFile).toHaveBeenCalledTimes(1);
+    output(analysis());
   });
-  it('원문 접근 실패를 표시하고 읽은 기사처럼 요약을 저장하지 않음', async () => {
-    const db = { newsArticle: { findMany: jest.fn().mockResolvedValue([{ ...article, excerpt: '' }]) } };
-    const news = new NewsService(db as unknown as PrismaService, new ConfigService({ AI_PROVIDER: 'claude-cli' }));
-    (readArticle as jest.Mock).mockResolvedValue({ available: false, message: '접근 제한' });
-    output({ summary: ['확인 불가', '제목만 제공됨', '원문 접근 실패'], articles: [{ id: 'a', summary: '확인 불가', importance: '확인 불가', impact: '확인 불가' }] });
-    expect(await news.analyze()).toMatchObject({ sourceArticles: [{ bodyStatus: 'unavailable', bodyMessage: '접근 제한' }] });
-    const stdin = (execFile as unknown as jest.Mock).mock.results[0].value.stdin;
-    expect(stdin.end.mock.calls[0][0]).toContain('제목 외 근거 없음');
+  afterEach(() => jest.restoreAllMocks());
+  it.each(['a', 'b'])('routes the authenticated user %s through AiService despite a demo app default', async user => {
+    expect(await news.analyze(user)).toMatchObject({ available: true, provider: choices[user].provider });
+    expect(ai.complete).toHaveBeenCalledWith(user, 'news-briefing', expect.objectContaining({ prompt: expect.stringContaining('RSS excerpt') }), expect.any(String));
   });
-  it('개별 기사 요약 동시 요청을 합치고 원문 요약만 반환', async () => {
-    const db = { newsArticle: { findUnique: jest.fn().mockResolvedValue(article) } };
-    const news = new NewsService(db as unknown as PrismaService, new ConfigService({ AI_PROVIDER: 'claude-cli' }));
-    (readArticle as jest.Mock).mockResolvedValue({ available: true, text: '본문 근거', url: article.url });
+  it('deduplicates same-user concurrent requests and reuses validated cached analysis', async () => {
+    const [a, b] = await Promise.all([news.analyze('a'), news.analyze('a')]);
+    expect(a).toEqual(b); expect(ai.complete).toHaveBeenCalledTimes(1);
+    expect((await news.briefing(undefined, 'a')).analysis).toEqual(a);
+    await news.analyze('a'); expect(ai.complete).toHaveBeenCalledTimes(1);
+  });
+  it('isolates concurrent and cached results by user, provider and model', async () => {
+    await Promise.all([news.analyze('a'), news.analyze('b')]); expect(ai.complete).toHaveBeenCalledTimes(2);
+    choices.a = { provider: 'chatgpt', model: 'gpt-model' };
+    expect((await news.briefing(undefined, 'a')).analysis).toBeNull(); await news.analyze('a');
+    choices.a.model = 'another-model';
+    expect((await news.briefing(undefined, 'a')).analysis).toBeNull(); await news.analyze('a');
+    expect(ai.complete).toHaveBeenCalledTimes(4);
+  });
+  it('isolates category results even when categories have the same articles', async () => {
+    const tech = await news.analyze('a', 'TECH'); await news.analyze('a', 'ECONOMY');
+    expect(ai.complete).toHaveBeenCalledTimes(2);
+    expect((await news.briefing('TECH', 'a')).analysis).toEqual(tech);
+    db.newsArticle.findMany.mockResolvedValue([{ ...article, id: 'new' }]);
+    expect((await news.briefing('TECH', 'a')).analysis).toBeNull();
+  });
+  it('expires cached analysis', async () => {
+    const now = Date.now(); jest.spyOn(Date, 'now').mockReturnValue(now);
+    await news.analyze('a'); jest.spyOn(Date, 'now').mockReturnValue(now + 3600001);
+    expect((await news.briefing(undefined, 'a')).analysis).toBeNull();
+    await news.analyze('a'); expect(ai.complete).toHaveBeenCalledTimes(2);
+  });
+  it('does not cache an in-flight response after the selection changes', async () => {
+    ai.complete.mockImplementation(async () => { choices.a = { provider: 'chatgpt', model: 'new' }; return { text: JSON.stringify(analysis()), provider: 'claude-cli', demo: false }; });
+    await news.analyze('a'); expect((await news.briefing(undefined, 'a')).analysis).toBeNull();
+    choices.a = { provider: 'claude-cli', model: 'claude-model' };
+    expect((await news.briefing(undefined, 'a')).analysis).toBeNull();
+  });
+  it('rejects invented articles and demo completions without caching them', async () => {
+    output(analysis('invented')); expect(await news.analyze('a')).toMatchObject({ available: false });
+    ai.complete.mockResolvedValue({ text: JSON.stringify(analysis()), provider: 'demo', demo: true });
+    expect(await news.analyze('a')).toMatchObject({ available: false });
+    expect((await news.briefing(undefined, 'a')).analysis).toBeNull();
+  });
+  it('does not invoke AI in a user-selected demo mode', async () => {
+    choices.a.provider = 'demo'; expect(await news.analyze('a')).toMatchObject({ available: false });
+    expect(await news.articleSummary('a', 'a')).toMatchObject({ available: false }); expect(ai.complete).not.toHaveBeenCalled();
+  });
+  it('reads missing excerpts and shares per-article summary only within the same scope', async () => {
+    db.newsArticle.findMany.mockResolvedValue([{ ...article, excerpt: '' }]);
+    expect(await news.analyze('b')).toMatchObject({ available: true, sourceArticles: [{ bodyStatus: 'read', summary: '원문 요약' }] });
+    expect(ai.complete.mock.calls[0][2].prompt).toContain('실제 원문 근거');
+    expect(await news.articleSummary('a', 'b')).toMatchObject({ available: true, summary: '원문 요약', provider: 'chatgpt' });
+    expect((await news.list('', undefined, 'b')).articles[0].articleSummary).toMatchObject({ provider: 'chatgpt' });
+    expect((await news.list('', undefined, 'a')).articles[0].articleSummary).toBeNull();
+    expect((await news.list()).articles[0].articleSummary).toBeNull();
+    expect(ai.complete).toHaveBeenCalledTimes(1);
+  });
+  it('deduplicates individual article requests and separates users/models', async () => {
     output({ summary: '한국어 원문 요약입니다.' });
-    const [first, second] = await Promise.all([news.articleSummary('a'), news.articleSummary('a')]);
-    expect(first).toEqual(second);
-    expect(first).toMatchObject({ available: true, summary: '한국어 원문 요약입니다.', sourceUrl: article.url });
-    expect(readArticle).toHaveBeenCalledTimes(1);
-    expect(execFile).toHaveBeenCalledTimes(1);
+    const [first, second] = await Promise.all([news.articleSummary('a', 'a'), news.articleSummary('a', 'a')]);
+    expect(first).toEqual(second); expect(first).toMatchObject({ available: true, sourceUrl: article.url });
+    expect(ai.complete).toHaveBeenCalledTimes(1);
+    await news.articleSummary('a', 'b'); choices.b.model = 'new'; await news.articleSummary('a', 'b');
+    expect(ai.complete).toHaveBeenCalledTimes(3);
   });
-  it('읽지 못한 원문은 Claude에 보내지 않음', async () => {
-    const db = { newsArticle: { findUnique: jest.fn().mockResolvedValue(article) } };
-    const news = new NewsService(db as unknown as PrismaService, new ConfigService({ AI_PROVIDER: 'claude-cli' }));
+  it('does not send inaccessible originals to either provider', async () => {
     (readArticle as jest.Mock).mockResolvedValue({ available: false, message: '접근 제한' });
-    expect(await news.articleSummary('a')).toEqual({ available: false, message: '접근 제한' });
-    expect(execFile).not.toHaveBeenCalled();
+    expect(await news.articleSummary('a', 'b')).toEqual({ available: false, message: '접근 제한' }); expect(ai.complete).not.toHaveBeenCalled();
+    db.newsArticle.findMany.mockResolvedValue([{ ...article, excerpt: '' }]);
+    expect(await news.analyze('b')).toMatchObject({ sourceArticles: [{ bodyStatus: 'unavailable', bodyMessage: '접근 제한' }] });
+    expect(ai.complete.mock.calls[0][2].prompt).toContain('제목 외 근거 없음');
   });
-  it('유효하지 않은 AI 원문 요약은 저장하지 않고 재시도를 허용', async () => {
-    const db = { newsArticle: { findUnique: jest.fn().mockResolvedValue(article) } };
-    const news = new NewsService(db as unknown as PrismaService, new ConfigService({ AI_PROVIDER: 'claude-cli' }));
-    (readArticle as jest.Mock).mockResolvedValue({ available: true, text: '본문 근거', url: article.url });
-    output({ summary: null });
-    expect(await news.articleSummary('a')).toMatchObject({ available: false });
-    output({ summary: '다시 생성한 요약' });
-    expect(await news.articleSummary('a')).toMatchObject({ available: true });
+  it('does not cache invalid summaries and preserves selected-provider errors without fallback', async () => {
+    output({ summary: null }); expect(await news.articleSummary('a', 'b')).toMatchObject({ available: false });
+    ai.complete.mockRejectedValue(new HttpException('ChatGPT 계정을 다시 연결해 주세요.', 400));
+    expect(await news.articleSummary('a', 'b')).toEqual({ available: false, message: 'ChatGPT 계정을 다시 연결해 주세요.' });
+    expect(await news.analyze('b')).toMatchObject({ available: false, message: 'ChatGPT 계정을 다시 연결해 주세요.' });
+    output({ summary: '다시 생성' }); expect(await news.articleSummary('a', 'b')).toMatchObject({ available: true });
+    expect(ai.complete.mock.calls.every(([user]: [string]) => user === 'b')).toBe(true);
   });
 });

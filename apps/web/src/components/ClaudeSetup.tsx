@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { api, errorMessage } from '../lib/api';
 import { Button, Card, Spinner } from './ui';
+import AiAccountCard from './AiAccountCard';
 
 type Status = { installed: boolean; version?: string; provider: string; message?: string };
 const key = (id: string) => `devmate-claude-onboarding-v1:${id}`;
@@ -16,6 +17,8 @@ export default function ClaudeSetup({ onComplete }: { onComplete?: () => void })
   const [verified, setVerified] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState('');
+  const [selected, setSelected] = useState('claude-cli');
+  useEffect(() => { setVerified(false); setResult(''); }, [selected]);
   async function check() {
     setLoading(true); setError(''); setVerified(false); setResult('');
     try { setStatus(await api.get<Status>('/ai/claude-code')); }
@@ -26,7 +29,7 @@ export default function ClaudeSetup({ onComplete }: { onComplete?: () => void })
   async function test() {
     setTesting(true); setVerified(false); setError(''); setResult('');
     try {
-      const response = await api.post<{ demo: boolean; provider: string; text: string }>('/ai/test');
+      const response = await api.post<{ demo: boolean; provider: string; text: string }>('/ai/claude-code/test');
       if (response.demo || response.provider !== 'claude-cli' || !response.text.trim()) { setError('실제 Claude Code 응답이 아닙니다. 현재 AI 제공자 설정을 확인해 주세요.'); return; }
       setVerified(true); setResult('Claude Code가 응답했습니다. AI 기능을 사용할 수 있어요.');
     } catch (e) { setError(errorMessage(e)); }
@@ -37,7 +40,9 @@ export default function ClaudeSetup({ onComplete }: { onComplete?: () => void })
     if (onComplete) onComplete(); else navigate('/');
   }
   return <div className="mx-auto w-full max-w-2xl space-y-6 p-5 py-10 sm:p-8">
-    <header><p className="mb-3 text-sm font-semibold text-accent">DevMata AI · 시작하기</p><h1 className="text-3xl font-bold">내 Claude 계정 연결하기</h1><p className="mt-3 text-sm leading-6 text-muted">이 PC에 설치된 Claude Code와 본인 계정으로 AI를 사용해요. 설치와 로그인은 한 번만 진행하면 돼요.</p></header>
+    <header><p className="mb-3 text-sm font-semibold text-accent">DevMata AI · 시작하기</p><h1 className="text-3xl font-bold">내 AI 계정 연결하기</h1><p className="mt-3 text-sm leading-6 text-muted">Claude, ChatGPT 또는 Gemini를 본인 계정으로 연결해 주세요.</p></header>
+    <AiAccountCard onSelection={setSelected} />
+    {selected === 'claude-cli' && <>
     <Card title="1. Claude Code 설치 확인" icon={Download}>
       {loading ? <Spinner /> : <p role="status" className="mb-4 text-sm">{status?.installed ? `설치 확인됨 · 버전 ${status.version}` : status?.message || '설치 상태를 확인하지 못했습니다.'}</p>}
       <div className="flex flex-wrap gap-3"><a href="https://code.claude.com/docs/en/setup" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent-soft px-4 text-sm font-semibold text-accent">공식 설치 안내<ExternalLink className="size-4" /></a><Button variant="secondary" disabled={loading || testing} onClick={() => void check()}><RefreshCw className="size-4" />다시 확인</Button></div>
@@ -49,12 +54,12 @@ export default function ClaudeSetup({ onComplete }: { onComplete?: () => void })
     </Card>
     <Card title="3. 연결 테스트" icon={CheckCircle2}>
       <p className="mb-4 text-sm leading-6 text-muted">버튼을 누르면 짧은 AI 요청으로 연결을 확인합니다. Claude 사용량이 소모될 수 있어요. 설치 확인만으로는 로그인 여부를 알 수 없습니다.</p>
-      {status && status.provider !== 'claude-cli' && <p className="mb-3 text-sm text-amber-600">현재 AI 제공자는 {status.provider}입니다. Claude Code 연결을 사용하려면 설정에서 제공자를 변경해야 합니다.</p>}
-      <Button loading={testing} disabled={loading || !status?.installed || status.provider !== 'claude-cli'} onClick={() => void test()}>Claude 연결 테스트</Button>
+      <Button loading={testing} disabled={loading || !status?.installed || selected !== 'claude-cli'} onClick={() => void test()}>Claude 연결 테스트</Button>
       {result && <p role="status" className="mt-3 text-sm text-accent">{result}</p>}
     </Card>
+    </>}
     {error && <p role="alert" className="rounded-xl bg-red-500/10 p-4 text-sm text-red-500">{error}</p>}
-    <div className="flex flex-wrap items-center justify-between gap-3"><Button variant={verified ? 'primary' : 'secondary'} disabled={testing} onClick={finish}>{verified ? 'DevMata AI 시작하기' : '나중에 연결하고 시작하기'}</Button><span className="text-sm text-muted">시작한 뒤 설정에서 다시 연결할 수 있어요</span></div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><Button variant={verified ? 'primary' : 'secondary'} disabled={testing} onClick={finish}>{verified || ['chatgpt', 'gemini'].includes(selected) ? 'DevMata AI 시작하기' : '나중에 연결하고 시작하기'}</Button><span className="text-sm text-muted">시작한 뒤 설정에서 다시 연결할 수 있어요</span></div>
   </div>;
 }
 

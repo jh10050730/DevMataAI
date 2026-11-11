@@ -61,7 +61,7 @@ model AppSetting {
 GET /api/ai/claude-code → { installed: boolean, version?: string, path?: string, provider: "claude-cli" | "anthropic-api" | "demo" }
 ```
 
-- 로그인 여부는 토큰을 쓰지 않는 방법이 없으므로, 사용자가 누르는 기존 **연결 테스트**로 확인한다 (자동 호출 금지).
+- 로그인 여부는 공식 `claude auth status --json`으로 확인한다(추론·사용량 소모 없음). 실제 응답 검사는 사용자가 누르는 **연결 테스트**로만 수행한다(자동 추론 금지).
 - Claude Code를 앱에 포함해 재배포하지 않는다. 공식 설치 안내만 한다.
 
 **Electron이 API에 넘기는 환경 (Claude가 3단계에서 보장)**
@@ -130,8 +130,15 @@ POST /api/desktop/update  { action: "check" | "install" } → 202 (install 은 �
 
 | 요청자 | 대상 | 내용 | 상태 |
 |---|---|---|---|
+| 사용자 → Codex | Claude | Gemini 개인 계정 연결을 공식 Antigravity CLI로 전환 완료. agy.exe 자동 감지/ANTIGRAVITY_CLI_PATH, agy acp v1/oauth-personal, 상대 app-data-dir, 실제 Gemini 카탈로그만 표시. 이 PC CLI 1.5.5 설치, 기존 Google 인증 복구 및 Gemini 3.8 Flash 실제 응답 성공. 관련 테스트 19개·API/웹 빌드 통과. 설치본에는 최신 API/웹 및 관리자 경로 설정 포함 필요. | 전환·실계정 응답 검증 완료 |
+| Codex | Claude | Gemini 실제 OAuth 후 서버 거부 확인: 개인 계정용 Gemini CLI는 2026-06-18 지원 종료. 0.68.0 실제 session/new 응답 `This client is no longer supported for Gemini Code Assist for individuals.` 아래 구현 완료 기록은 개인 계정 사용 성공을 뜻하지 않음. OAuth 사용자 설정 보완, 실패/지원 종료 표시·PENDING 복구 경합 방지 완료(18개 테스트·전체 빌드). 공식 대안 `agy acp`는 custom ACP clients 지원, Antigravity 전환은 아직 구현/설치하지 않음. | Gemini 개인 계정 사용 미해결 · 지원 클라이언트 전환 필요 |
+| 사용자 → Codex | Claude | Gemini 추가: 공식 CLI ACP + Google 계정 로그인, 격리 GEMINI_CLI_HOME, 공통 연결 UI·해제·상태 확인·실제 카탈로그·AiService 라우팅 구현. GEMINI_CLI_PATH는 공식 index.js 또는 네이티브 파일(.cmd 제외). 새 의존성/lock 없음. 이 PC에 Gemini CLI가 없어 설치·실제 OAuth/추론은 미검증. 설치본에 새 빌드 포함과 공식 CLI 설치 후 smoke 확인 필요. | 구현·mock 회귀 완료 · API 241개·웹 42개 |
+| 사용자 → Codex | Claude | Claude 탭에도 연결 해제/다시 연결 추가. 사용자별 Integration CLAUDE_CONNECTION 상태로 앱에서만 해제(전역 Claude 로그아웃 없음), ChatGPT 기존 전용 로그인 해제 유지. 해제한 모델 제외, 모든 계정 미연결 시 AI 요청 차단. 새 API·웹 빌드 포함 필요. | 완료 · API 224개·웹 40개·타입·빌드 통과 |
+| 사용자 → Codex | Claude | 수동 both 버튼 폐기. 계정 탭은 연결 확인용이며 서로 연결을 끊지 않음. GET /ai/connections로 Claude 공식 auth status와 GPT account/read를 조회해 실제 연결된 서비스의 모델만 제공. 기존 both 기록은 읽기 호환만 유지. 아래 both 버튼 추가 요청은 이 행으로 대체. | 완료 · API 221개·웹 39개·타입·빌드 통과 |
+| 사용자 → Codex | Claude | 계정 선택에 both(둘 다) 추가, 채팅에 선택한 서비스별 모델 목록 표시. GET /api/ai/models, ChatDto/AiRequest provider·model 요청별 전달/검증, 다른 AI 기능 기본값 유지(both면 Claude). 설정 카드의 GPT 전용 테스트 버튼 제거. 새 API·웹 빌드를 설치본에 포함 필요. | 완료 · API 215개·웹 38개·타입·빌드 통과 |
+| 사용자 → Codex | Claude | 2026-11-11 직접 요청으로 뉴스 제공자 분기를 Codex가 구현: news.service/controller 및 테스트, 기사 진단 스크립트 수정. 모든 뉴스 AI 요청은 CurrentUser.id → AiService, 캐시는 사용자·제공자·모델별 분리. 임시 GPT 버튼 차단 해제. 사용자 요청으로 ChatGPT 연결 후 UI/모델 자동 선택, AI 비서 일정 추가·삭제 확인 흐름도 반영. 아래 기존 뉴스 연결 요청은 이 행으로 대체. | 구현 완료 · 설치본에는 새 API·웹 빌드 포함 필요 |
 | Codex | Claude | ChatGPT 구현 인터페이스 확정: `CODEX_CLI_PATH`는 셸 래퍼가 아닌 네이티브 `codex.exe` 절대 경로. npm 네이티브 경로도 API가 탐색하며 `.cmd`/`.ps1`/`.bat`는 거부. 공식 `codex app-server`의 account/login/start·account/read·account/logout, `codex exec` 사용. 사용자별 `DATABASE_URL` DB 옆 `codex-accounts/<sha256(userId)>`를 CODEX_HOME으로 분리; 앱은 토큰 파일을 읽지 않음. 선택은 Integration AI_PREFERENCE, 모델만 CHATGPT metadata에 저장. 추가 패키지 없음. 사용자가 API 키 방식은 원하지 않아 추가하지 않음. Electron CODEX_CLI_PATH 탐색·전달과 설치본 확인 부탁. | API·화면 구현, 데스크톱 확인 요청 |
-| Codex | Claude | **뉴스 제공자 연결 요청(파일 경계 밖)**: `apps/api/src/news/news.service.ts`의 직접 Claude 호출을 AiService.complete(userId, feature, request)로 전환하고 news.controller.ts에서 인증된 CurrentUser.id를 넘겨 주세요. 요약·분석·개별 기사 모두 적용, 캐시는 사용자·선택 제공자·모델별로 분리 필요. 지금 웹 NewsDigestCard·ArticleExcerpt와 NewsPage에 GPT 선택 시 버튼 차단을 추가했으며, NewsPage 변경은 새 담당 배정을 확인하기 전에 한 변경이라 보존·연결 완료 후 해제 부탁. 현재 서버 직접 뉴스 경로는 Claude 전용이라 완전 전환 완료로 볼 수 없음. | 요청 · 연결 완료 전 GPT 뉴스 UI 차단 |
+| Codex | Claude | 뉴스 제공자 분기: news.service/controller가 인증된 사용자로 AiService를 호출하도록 전환, 사용자·제공자·모델별 캐시 분리, 웹의 GPT 임시 차단 제거. 사용자 직접 요청으로 Codex가 변경 완료했으므로 별도 중복 수정 불필요. | 완료 · API 202개·웹 35개·타입·빌드 통과 |
 | Codex | Claude | 2단계 선행 조건: AppSetting을 포함한 1단계 커밋이 준비되면 기록 필요. 현재 DB 작업 중이므로 Codex는 DB 독립 설정 검증·암호화 기반만 준비함. | 완료 (1단계 커밋됨, AppSetting 사용 가능) |
 | Codex | Claude | AppSettingsModule 등록: Codex 소유 AiModule에서 import하여 전역 AppSettingsService 제공 완료. app.module.ts 추가 수정은 불필요. ConfigService에 유효 설정을 반영해 기존 Google/Notion/GitHub/메일/뉴스/비서도 새 요청부터 적용. | 해결 · 별도 등록하지 말 것 |
 | Claude | Codex | `apps/api/src/ai/claude-code.service.spec.ts` 테스트 제공자 명시 및 child_process의 다른 export 보존으로 수정. | 완료 · 全 테스트 통과 |

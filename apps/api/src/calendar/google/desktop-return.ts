@@ -38,7 +38,7 @@ export function returnPage(ok: boolean, reason?: string) {
 /** 브라우저에 보여 줄 결과 페이지 (Google 본인 확인) */
 export function identityPage(ok: boolean, message: string) {
   const title = ok ? 'Google 본인 확인 완료' : 'Google 본인 확인 실패';
-  const body = `${escapeHtml(message)}<br>DevMata AI 화면으로 돌아가 이어서 진행해 주세요. 이 탭은 닫아도 됩니다.`;
+  const body = `${escapeHtml(message)}<br>DevMata AI 화면으로 돌아가 이어서 진행해 주세요.<br>이 탭은 닫아도 됩니다.`;
   return page(ok, title, body);
 }
 

@@ -5,6 +5,7 @@ import { api, errorMessage } from '../lib/api';
 import { Badge, Button, Card, EmptyState, ErrorState, Input, Spinner, Textarea } from '../components/ui';
 import Markdown from '../components/Markdown';
 import NewsDigestCard from '../components/NewsDigestCard';
+import ChatModelPicker, { type ChatModel } from '../components/ChatModelPicker';
 
 type Action = { id: string; kind: string; targetTitle: string; payload: string; expiresAt: string; state?: string };
 type Message = { role: 'user' | 'assistant'; content: string; demo?: boolean; actions?: Action[] };
@@ -32,6 +33,7 @@ export default function AssistantPage() {
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [chatModel, setChatModel] = useState<ChatModel>({});
   const chatEnd = useRef<HTMLDivElement>(null);
   async function loadBriefing() { setBriefing(await api.get<Briefing>('/assistant/briefing')); }
   useEffect(() => { loadBriefing().catch(e => setError(errorMessage(e))); }, []);
@@ -49,7 +51,7 @@ export default function AssistantPage() {
     const history = messages.slice(-8).map(m => ({ role: m.role, content: m.content.slice(0, 4000) }));
     setMessages(rows => [...rows, { role: 'user', content: text }]); setInput('');
     try {
-      const result = await api.post<{ answer: string; demo: boolean; actions: Action[] }>('/assistant/chat', { message: text, history });
+      const result = await api.post<{ answer: string; demo: boolean; actions: Action[] }>('/assistant/chat', { message: text, history, ...chatModel });
       setMessages(rows => [...rows, { role: 'assistant', content: result.answer, demo: result.demo, actions: result.actions }]);
     } catch (e) { setError(errorMessage(e)); setInput(text); }
     finally { setBusy(false); }
@@ -77,6 +79,7 @@ export default function AssistantPage() {
     </Card>}
     <NewsDigestCard />
     <Card title="개인 비서 채팅" icon={Bot}>
+      <ChatModelPicker busy={busy} onChange={setChatModel} />
       <p className="mb-4 text-xs text-muted">이 화면의 대화는 새로고침하면 초기화됩니다. AI는 저장된 데이터 중 제한된 범위를 참고하며, 변경 제안은 확인 전 실행되지 않습니다.</p>
       <div className="max-h-[36rem] space-y-4 overflow-y-auto">{!messages.length && <EmptyState icon={Bot} title="오늘 무엇을 먼저 할까요?" description="일정이나 학습, 프로젝트에 관해 질문해 보세요." />}{messages.map((m, i) => <div key={i} className={`rounded-xl p-4 ${m.role === 'user' ? 'ml-6 bg-accent/10' : 'mr-3 bg-surface-2'}`}><p className="mb-2 text-xs font-medium text-muted">{m.role === 'user' ? '나' : m.demo ? '비서 · DEMO (실제 AI 분석 아님)' : 'AI 비서'}</p><Markdown source={m.content} />{m.actions?.map(a => <div key={a.id} className="mt-3 rounded-lg border border-amber-500/50 p-3"><p className="text-sm font-medium">변경 제안: {actionLabels[a.kind]}</p><p className="mt-1 text-sm">대상: {a.targetTitle}</p><ActionDetails payload={a.payload} /><p className="my-2 text-xs text-muted">{a.state || `확인 전에는 변경되지 않습니다. ${new Date(a.expiresAt).toLocaleTimeString('ko-KR')}까지 유효합니다.`}</p>{!a.state && <div className="flex gap-2"><Button disabled={busy || Date.now() > new Date(a.expiresAt).getTime()} variant={a.kind.endsWith('delete') ? 'danger' : 'primary'} onClick={() => void resolve(a, true)}>확인하고 적용</Button><Button disabled={busy} variant="secondary" onClick={() => void resolve(a, false)}>취소</Button></div>}</div>)}</div>)}<div ref={chatEnd} /></div>
       {busy && <Spinner />}<form className="mt-4 flex items-end gap-2" onSubmit={e => void send(e)}><Textarea required aria-label="비서에게 질문" maxLength={2000} placeholder="오늘 할 일을 정리해줘… (Enter 보내기 · Shift+Enter 줄바꿈)" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => {

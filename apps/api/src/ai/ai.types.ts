@@ -1,6 +1,8 @@
 export interface AiRequest {
   system: string;
   prompt: string;
+  provider?: 'claude-cli' | 'chatgpt' | 'gemini';
+  model?: string;
 }
 
 export interface AiResult {

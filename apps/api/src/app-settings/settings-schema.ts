@@ -16,6 +16,8 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
   { key: 'smtp.from', env: 'SMTP_FROM', label: '발신 이메일', group: '이메일', secret: false, kind: 'email' },
   { key: 'ai.provider', env: 'AI_PROVIDER', label: 'AI 제공자', group: 'AI', secret: false, kind: 'provider' },
   { key: 'ai.cliPath', env: 'CLAUDE_CLI_PATH', label: 'Claude Code 실행 경로', group: 'AI', secret: false },
+  { key: 'ai.codexPath', env: 'CODEX_CLI_PATH', label: 'ChatGPT 연결 실행 경로', group: 'AI', secret: false },
+  { key: 'ai.geminiPath', env: 'ANTIGRAVITY_CLI_PATH', label: 'Gemini 연결 실행 경로 (agy.exe)', group: 'AI', secret: false },
   { key: 'ai.model', env: 'CLAUDE_CLI_MODEL', label: 'Claude 모델', group: 'AI', secret: false, kind: 'model' },
 ];
 

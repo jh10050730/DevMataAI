@@ -27,4 +27,17 @@ describe('Claude Code installation check', () => {
     (execFile as unknown as jest.Mock).mockImplementation((_path, _args, _options, callback) => callback({ killed: true }, ''));
     expect(await new ClaudeCodeService(new ConfigService()).status()).toMatchObject({ installed: false, reason: 'unavailable' });
   });
+  it('checks subscription login without inference and exposes only public account fields', async () => {
+    (execFile as unknown as jest.Mock).mockImplementation((_path, _args, _options, callback) => callback(null, JSON.stringify({ loggedIn: true, authMethod: 'claude.ai', email: 'user@example.com', accessToken: 'never-expose', orgId: 'private-org' })));
+    const service = new ClaudeCodeService(new ConfigService());
+    const result = await service.connection();
+    expect(result).toMatchObject({ connected: true, email: 'user@example.com' });
+    expect(JSON.stringify(result)).not.toMatch(/never-expose|private-org/);
+    expect(execFile).toHaveBeenCalledWith('claude', ['auth', 'status', '--json'], expect.objectContaining({ shell: false, timeout: 15000 }), expect.any(Function));
+    await service.connection(); expect(execFile).toHaveBeenCalledTimes(1);
+  });
+  it.each(['api_key', 'api_key_helper', 'third_party', 'none'])('does not mark %s as a connected subscription', async authMethod => {
+    (execFile as unknown as jest.Mock).mockImplementation((_path, _args, _options, callback) => callback(null, JSON.stringify({ loggedIn: true, authMethod })));
+    expect(await new ClaudeCodeService(new ConfigService()).connection()).toMatchObject({ connected: false });
+  });
 });

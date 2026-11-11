@@ -6,6 +6,8 @@ class ChatMessage {
   @IsString() @MaxLength(4000) content!: string;
 }
 export class ChatDto {
+  @ValidateIf(optional) @IsIn(['claude-cli', 'chatgpt', 'gemini']) provider?: 'claude-cli' | 'chatgpt' | 'gemini';
+  @ValidateIf(optional) @IsString() @MinLength(1) @MaxLength(200) model?: string;
   @IsString() @MinLength(1) @MaxLength(2000) message!: string;
   @ValidateIf(optional) @IsArray() @ArrayMaxSize(8) @ValidateNested({ each: true }) @Type(() => ChatMessage) history?: ChatMessage[];
 }

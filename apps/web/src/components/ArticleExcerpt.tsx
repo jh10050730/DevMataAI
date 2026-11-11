@@ -19,7 +19,7 @@ export default function ArticleExcerpt({ article, compact = false }: { article: 
   </div>;
   if (article.excerpt.trim()) return <p className={`mt-2 text-sm leading-relaxed text-muted ${compact ? 'line-clamp-2' : 'line-clamp-4'}`}>{article.excerpt}</p>;
   return <div className="mt-2 space-y-2">
-    <p className="text-xs text-muted" role="status">{loading ? '원문을 읽고 Claude가 요약하고 있습니다…' : value?.message || article.bodyMessage || '발췌가 없는 기사입니다. 원문을 읽어 요약할 수 있습니다.'}</p>
+    <p className="text-xs text-muted" role="status">{loading ? '원문을 읽고 선택한 AI가 요약하고 있습니다…' : value?.message || article.bodyMessage || '발췌가 없는 기사입니다. 원문을 읽어 요약할 수 있습니다.'}</p>
     <Button variant="secondary" className="text-xs" loading={loading} onClick={() => void summarize()}>{value?.message || article.bodyMessage ? '원문 요약 다시 시도' : '원문 읽고 요약'}</Button>
   </div>;
 }
