@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import { NoEmailDomainTypo } from './email-domain';
 
 const trimLower = ({ value }: { value: unknown }) =>
@@ -23,6 +23,12 @@ export class RegisterDto {
   @MinLength(6, { message: '비밀번호는 6자 이상이어야 합니다.' })
   @MaxLength(72, { message: '비밀번호는 72자 이하여야 합니다.' }) // bcrypt 한계
   password: string;
+
+  /** Google 본인 확인 표 (데스크톱 앱에서는 필수) */
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  googleTicket?: string;
 }
 
 export class ForgotPasswordDto {

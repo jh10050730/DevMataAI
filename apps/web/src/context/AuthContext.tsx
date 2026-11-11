@@ -7,7 +7,7 @@ interface AuthValue {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string, remember?: boolean) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, googleTicket?: string) => Promise<void>;
   logout: () => void;
   setUser: (u: User) => void;
 }
@@ -68,8 +68,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     handleAuth(await api.post('/auth/login', { email, password }), remember);
   }, []);
 
-  const register = useCallback(async (name: string, email: string, password: string) => {
-    handleAuth(await api.post('/auth/register', { name, email, password }));
+  const register = useCallback(async (name: string, email: string, password: string, googleTicket?: string) => {
+    handleAuth(await api.post('/auth/register', { name, email, password, ...(googleTicket ? { googleTicket } : {}) }));
   }, []);
 
   const logout = useCallback(() => {

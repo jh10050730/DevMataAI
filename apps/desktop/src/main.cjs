@@ -2,7 +2,7 @@
 const { app, BrowserWindow, Menu, Tray, dialog, nativeImage, shell } = require('electron');
 const { join } = require('node:path');
 const { loadConfig } = require('./config.cjs');
-const { appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, resetRoute, updateAction } = require('./paths.cjs');
+const { appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, isFocusRequest, resetRoute, updateAction } = require('./paths.cjs');
 const { startApi } = require('./server.cjs');
 const { trayIcon, windowIcon } = require('./icon.cjs');
 const { createUpdater } = require('./updater.cjs');
@@ -50,6 +50,7 @@ async function start() {
   api.on('exit', code => { if (!quitting) fail(new Error(`API 서버가 예기치 않게 종료되었습니다 (코드 ${code}).\n로그: ${join(dataDir, 'logs', 'api.log')}`)); });
   // Google 로그인이 브라우저에서 끝나면 API 가 알려 준다 → 앱 창을 앞으로 가져와 설정 화면(결과 표시)을 연다.
   api.on('message', message => {
+    if (isFocusRequest(message)) { bringToFront(); return; }
     const route = appRoute(message);
     if (route) { openInApp(route); return; }
     const reset = resetRoute(message);
@@ -110,6 +111,12 @@ function openInApp(route) {
   const url = new URL(route.slice(1), app.devmataUrl).toString();
   if (!win) { createWindow(url); return; }
   void win.loadURL(url);
+  bringToFront();
+}
+
+/** 다른 창(브라우저) 위로 앱 창을 가져온다. 화면은 그대로 둔다 */
+function bringToFront() {
+  if (!win) { showWindow(); return; }
   if (win.isMinimized()) win.restore();
   win.show();
   win.setAlwaysOnTop(true);

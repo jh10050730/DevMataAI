@@ -95,6 +95,11 @@ function folderTarget(message) {
   return ['data', 'logs'].includes(message.target) ? message.target : null;
 }
 
+/** API 가 보낸 "창만 앞으로" 요청 (Google 본인 확인이 끝났을 때) */
+function isFocusRequest(message) {
+  return !!message && message.type === 'focus';
+}
+
 /** API 가 보낸 "업데이트" 요청. check·install 만 허용, 아니면 null */
 function updateAction(message) {
   if (!message || message.type !== 'update') return null;
@@ -106,4 +111,4 @@ function isExternalUrl(url) {
   try { return ['http:', 'https:'].includes(new URL(url).protocol); } catch { return false; }
 }
 
-module.exports = { APP_DEFAULT_KEYS, appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, resetRoute, updateAction };
+module.exports = { APP_DEFAULT_KEYS, appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, isFocusRequest, resetRoute, updateAction };

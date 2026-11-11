@@ -9,7 +9,8 @@ export type DesktopMessage =
   | { type: 'open-app'; path: string }
   | { type: 'reset-password'; email: string; path: string }
   | { type: 'open-folder'; target: 'data' | 'logs' }
-  | { type: 'update'; action: 'check' | 'install' };
+  | { type: 'update'; action: 'check' | 'install' }
+  | { type: 'focus' };
 
 type Send = (message: unknown) => boolean;
 

@@ -157,3 +157,11 @@ test('update requests are only check or install', () => {
   assert.equal(updateAction({ type: 'open-folder', action: 'check' }), null);
   assert.equal(updateAction(undefined), null);
 });
+
+test('focus requests only bring the window forward', () => {
+  const { isFocusRequest } = require('./paths.cjs');
+  assert.equal(isFocusRequest({ type: 'focus' }), true);
+  assert.equal(isFocusRequest({ type: 'open-app', path: '/' }), false);
+  assert.equal(isFocusRequest(null), false);
+  assert.equal(isFocusRequest('focus'), false);
+});

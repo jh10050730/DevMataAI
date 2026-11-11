@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { PasswordResetService } from './password-reset.service';
 import { MailModule } from '../mail/mail.module';
+import { GoogleIdentityService } from './google-identity.service';
 
 @Global()
 @Module({
@@ -22,6 +23,7 @@ import { MailModule } from '../mail/mail.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, PasswordResetService],
+  providers: [AuthService, PasswordResetService, GoogleIdentityService],
+  exports: [GoogleIdentityService],
 })
 export class AuthModule {}

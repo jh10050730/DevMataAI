@@ -5,6 +5,9 @@ import { api, errorMessage } from '../lib/api';
 import { emailDomainError } from '../lib/email';
 import { useAuth } from '../context/AuthContext';
 import { Button, Field, Input } from '../components/ui';
+import GoogleVerify from '../components/GoogleVerify';
+import { identityApi, type IdentityDone } from '../lib/googleIdentity';
+import { useAsync } from '../lib/useAsync';
 
 export default function PasswordResetPage({ mode }: { mode: 'request' | 'reset' }) {
   const location = useLocation();
@@ -18,6 +21,13 @@ export default function PasswordResetPage({ mode }: { mode: 'request' | 'reset' 
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const reset = mode === 'reset';
+  // 비밀번호 찾기: 가입한 Google 계정으로 본인 확인하면 바로 새 비밀번호 화면으로
+  const { data: google } = useAsync(() => (reset ? Promise.resolve(null) : identityApi.available().catch(() => null)), [reset]);
+  const [googleNote, setGoogleNote] = useState('');
+  const onGoogle = (r: IdentityDone) => {
+    if (r.resetPath) navigate(r.resetPath);
+    else setGoogleNote(`${r.email}(으)로 가입된 계정이 없어요. 다른 Google 계정으로 확인하거나 회원가입해 주세요.`);
+  };
   const invalidLink = reset && !/^[a-f0-9]{64}$/.test(token);
   useEffect(() => { if (reset && location.hash) navigate('/reset-password', { replace: true }); }, [reset, location.hash, navigate]);
   async function submit(event: FormEvent) {
@@ -38,7 +48,12 @@ export default function PasswordResetPage({ mode }: { mode: 'request' | 'reset' 
   const Icon = message ? CheckCircle2 : reset ? KeyRound : Mail;
   return <div className="flex min-h-full items-center justify-center bg-bg p-5"><section className="workspace-card w-full max-w-md rounded-[28px] bg-surface p-8">
     <Link to="/login" className="text-xl font-bold">DevMata AI</Link>
-    <div className="mb-6 mt-8"><Icon className="mb-4 size-9 text-accent" /><h1 className="text-2xl font-bold">{reset ? '새 비밀번호 설정' : '비밀번호 찾기'}</h1><p className="mt-2 text-sm leading-6 text-muted">{reset ? '새 비밀번호를 입력해 주세요. 변경 후 모든 기기에서 다시 로그인해야 합니다.' : '가입한 이메일로 비밀번호 재설정 링크를 보내드려요. 링크는 15분 동안 사용할 수 있어요.'}</p></div>
+    <div className="mb-6 mt-8"><Icon className="mb-4 size-9 text-accent" /><h1 className="text-2xl font-bold">{reset ? '새 비밀번호 설정' : '비밀번호 찾기'}</h1><p className="mt-2 text-sm leading-6 text-muted">{reset ? '새 비밀번호를 입력해 주세요. 변경 후 모든 기기에서 다시 로그인해야 합니다.' : (google?.available ? '가입한 Google 계정으로 본인 확인하면 바로 새 비밀번호를 정할 수 있어요.' : '가입한 이메일로 비밀번호 재설정 링크를 보내드려요. 링크는 15분 동안 사용할 수 있어요.')}</p></div>
+    {!reset && google?.available && !message && <div className="mb-6 space-y-3">
+      <GoogleVerify purpose="reset" label="Google로 본인 확인하고 재설정" onDone={onGoogle} />
+      {googleNote && <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">{googleNote}</p>}
+      <p className="pt-3 text-center text-xs text-muted">Google 계정이 아닌 이메일로 가입했다면 아래에 이메일을 입력하세요.</p>
+    </div>}
     {invalidLink ? <p role="alert" className="text-sm text-red-500">재설정 링크가 올바르지 않습니다. 메일의 링크를 다시 열거나 새 링크를 요청해 주세요.</p> : message ? <p role="status" className="rounded-2xl bg-accent-soft p-4 text-sm leading-6">{message}</p> : <form className="space-y-4" onSubmit={submit}>
       {reset ? <>
         <Field label="새 비밀번호" hint="6자 이상"><Input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} maxLength={72} autoComplete="new-password" /></Field>

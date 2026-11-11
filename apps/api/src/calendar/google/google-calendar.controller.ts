@@ -2,12 +2,13 @@ import { BadRequestException, Controller, Delete, Get, HttpCode, Post, Query, Re
 import type { Response } from 'express';
 import { Public } from '../../auth/public.decorator';
 import { AuthUser, CurrentUser } from '../../common/current-user.decorator';
-import { isDesktop, notifyDesktop, returnPage, settingsPath } from './desktop-return';
+import { focusDesktop, identityPage, isDesktop, notifyDesktop, returnPage, settingsPath } from './desktop-return';
+import { GoogleIdentityService } from '../../auth/google-identity.service';
 import { GoogleCalendarService } from './google-calendar.service';
 
 @Controller('google')
 export class GoogleCalendarController {
-  constructor(private readonly google: GoogleCalendarService) {}
+  constructor(private readonly google: GoogleCalendarService, private readonly identity: GoogleIdentityService) {}
 
   @Get('status')
   status(@CurrentUser() user: AuthUser) {
@@ -33,6 +34,12 @@ export class GoogleCalendarController {
     @Query('error') error: string | undefined,
     @Res() res: Response,
   ) {
+    // 회원가입·비밀번호 찾기·아이디 찾기의 Google 본인 확인 (같은 콜백 주소를 쓴다)
+    if (this.identity.owns(state)) {
+      const result = await this.identity.callback(code, state, error);
+      if (isDesktop()) focusDesktop();
+      return res.status(200).type('html').send(identityPage(result.ok, result.message));
+    }
     const back = (result: string, reason?: string) => {
       const path = settingsPath(result, reason);
       // 데스크톱 앱: 앱 창을 앞으로 가져오고, 브라우저에는 "앱으로 돌아가세요" 안내

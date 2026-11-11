@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from '../users/users.service';
 import { LoginDto, RegisterDto } from './auth.dto';
+import { GoogleIdentityService } from './google-identity.service';
 
 const BCRYPT_ROUNDS = 10;
 
@@ -11,12 +12,18 @@ export class AuthService {
   constructor(
     private readonly users: UsersService,
     private readonly jwt: JwtService,
+    private readonly identity: GoogleIdentityService,
   ) {}
 
   async register(dto: RegisterDto) {
     if (Buffer.byteLength(dto.password, 'utf8') > 72) throw new BadRequestException('비밀번호는 UTF-8 기준 72바이트 이하여야 합니다.');
     const existing = await this.users.findByEmail(dto.email);
     if (existing) throw new ConflictException('이미 가입된 이메일입니다.');
+    // 데스크톱 앱: Google 로 확인한 이메일로만 가입 (확인 표는 한 번만 쓸 수 있다)
+    if (this.identity.requiredForSignup || dto.googleTicket) {
+      const verified = this.identity.consumeTicket(dto.googleTicket);
+      if (verified.email !== dto.email) throw new BadRequestException('Google 로 확인한 이메일로만 가입할 수 있어요.');
+    }
 
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
     const user = await this.users.create({ email: dto.email, name: dto.name, passwordHash });
