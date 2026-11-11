@@ -20,7 +20,7 @@ export class RegisterDto {
   name: string;
 
   @IsString()
-  @MinLength(8, { message: '비밀번호는 8자 이상이어야 합니다.' })
+  @MinLength(6, { message: '비밀번호는 6자 이상이어야 합니다.' })
   @MaxLength(72, { message: '비밀번호는 72자 이하여야 합니다.' }) // bcrypt 한계
   password: string;
 }
@@ -35,9 +35,9 @@ export class ForgotPasswordDto {
 export class ResetPasswordDto {
   @IsString() @Matches(/^[a-f0-9]{64}$/, { message: '유효하지 않은 재설정 링크입니다.' })
   token: string;
-  @IsString() @MinLength(8) @MaxLength(72)
+  @IsString() @MinLength(6, { message: '비밀번호는 6자 이상이어야 합니다.' }) @MaxLength(72)
   password: string;
-  @IsString() @MinLength(8) @MaxLength(72)
+  @IsString() @MinLength(6, { message: '비밀번호는 6자 이상이어야 합니다.' }) @MaxLength(72)
   passwordConfirmation: string;
 }
 

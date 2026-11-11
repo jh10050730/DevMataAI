@@ -21,7 +21,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
     e.preventDefault();
     setError(null);
     if (!isLogin && emailDomainError(email)) return setError(emailDomainError(email));
-    if (!isLogin && password.length < 8) return setError('비밀번호는 8자 이상이어야 합니다.');
+    if (!isLogin && password.length < 6) return setError('비밀번호는 6자 이상이어야 합니다.');
     if (!isLogin && password !== passwordConfirmation) return setError('비밀번호가 일치하지 않습니다. 다시 확인해 주세요.');
     setSubmitting(true);
     try {
@@ -57,7 +57,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={254} autoComplete="email" aria-invalid={!isLogin && !!emailDomainError(email)} aria-describedby={!isLogin && emailDomainError(email) ? 'email-domain-error' : undefined} />
           </Field>
           {!isLogin && emailDomainError(email) && <p id="email-domain-error" className="text-xs text-red-500">{emailDomainError(email)}</p>}
-          <Field label="비밀번호" hint={isLogin ? undefined : '8자 이상'}>
+          <Field label="비밀번호" hint={isLogin ? undefined : '6자 이상'}>
             <Input
               type="password"
               value={password}

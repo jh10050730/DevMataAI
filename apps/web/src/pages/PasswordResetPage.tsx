@@ -41,8 +41,8 @@ export default function PasswordResetPage({ mode }: { mode: 'request' | 'reset' 
     <div className="mb-6 mt-8"><Icon className="mb-4 size-9 text-accent" /><h1 className="text-2xl font-bold">{reset ? '새 비밀번호 설정' : '비밀번호 찾기'}</h1><p className="mt-2 text-sm leading-6 text-muted">{reset ? '새 비밀번호를 입력해 주세요. 변경 후 모든 기기에서 다시 로그인해야 합니다.' : '가입한 이메일로 비밀번호 재설정 링크를 보내드려요. 링크는 15분 동안 사용할 수 있어요.'}</p></div>
     {invalidLink ? <p role="alert" className="text-sm text-red-500">재설정 링크가 올바르지 않습니다. 메일의 링크를 다시 열거나 새 링크를 요청해 주세요.</p> : message ? <p role="status" className="rounded-2xl bg-accent-soft p-4 text-sm leading-6">{message}</p> : <form className="space-y-4" onSubmit={submit}>
       {reset ? <>
-        <Field label="새 비밀번호" hint="8자 이상"><Input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} maxLength={72} autoComplete="new-password" /></Field>
-        <Field label="새 비밀번호 확인"><Input type="password" value={confirmation} onChange={e => setConfirmation(e.target.value)} required minLength={8} maxLength={72} autoComplete="new-password" /></Field>
+        <Field label="새 비밀번호" hint="6자 이상"><Input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} maxLength={72} autoComplete="new-password" /></Field>
+        <Field label="새 비밀번호 확인"><Input type="password" value={confirmation} onChange={e => setConfirmation(e.target.value)} required minLength={6} maxLength={72} autoComplete="new-password" /></Field>
       </> : <Field label="이메일"><Input type="email" value={email} onChange={e => setEmail(e.target.value)} required maxLength={254} autoComplete="email" placeholder="가입한 이메일을 입력해 주세요" /></Field>}
       {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
       <Button type="submit" loading={busy} className="w-full">{reset ? '비밀번호 변경' : '재설정 링크 보내기'}</Button>

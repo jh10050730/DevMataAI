@@ -53,6 +53,9 @@ describe('DevMata AI API (e2e)', () => {
 
     it('잘못된 입력은 400 (짧은 비밀번호, 알 수 없는 필드)', async () => {
       await api().post('/api/auth/register').send({ email: 'c@test.com', name: 'c', password: '123' }).expect(400);
+      const short = await api().post('/api/auth/register').send({ email: 'c@test.com', name: 'c', password: '12345' }).expect(400);
+      expect(JSON.stringify(short.body)).toContain('6자 이상');
+      await api().post('/api/auth/register').send({ email: 'six@test.com', name: 'six', password: '123456' }).expect(201);
       await api()
         .post('/api/auth/register')
         .send({ email: 'c@test.com', name: 'c', password: 'password123', isAdmin: true })
