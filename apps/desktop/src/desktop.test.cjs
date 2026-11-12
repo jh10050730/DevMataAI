@@ -165,3 +165,14 @@ test('focus requests only bring the window forward', () => {
   assert.equal(isFocusRequest(null), false);
   assert.equal(isFocusRequest('focus'), false);
 });
+
+test('reload shortcut is Ctrl+R or F5 on key down only', () => {
+  const { isReloadKey } = require('./paths.cjs');
+  assert.equal(isReloadKey({ type: 'keyDown', key: 'r', control: true }), true);
+  assert.equal(isReloadKey({ type: 'keyDown', key: 'R', control: true }), true);
+  assert.equal(isReloadKey({ type: 'keyDown', key: 'F5' }), true);
+  assert.equal(isReloadKey({ type: 'keyUp', key: 'r', control: true }), false);
+  assert.equal(isReloadKey({ type: 'keyDown', key: 'r' }), false);
+  assert.equal(isReloadKey({ type: 'keyDown', key: 'r', control: true, shift: true }), false);
+  assert.equal(isReloadKey(null), false);
+});

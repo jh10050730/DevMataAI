@@ -66,7 +66,7 @@ export default function ProjectFilesCard({ project, onAnalyzed }: { project: Fil
           </div>
           <ProgressBar value={project.aiProgress} className="mt-2" />
           <p className="mt-3 text-sm">{detail.summary}</p>
-          <div className="mt-3 grid gap-4 md:grid-cols-2">
+          <div className="mt-3 grid gap-4 @2xl:grid-cols-2">
             <div><h4 className="mb-1 text-xs font-semibold text-emerald-500">구현된 것</h4><ul className="list-disc space-y-1 pl-4 text-xs">{detail.done.map((d, i) => <li key={i}>{d}</li>)}</ul></div>
             <div><h4 className="mb-1 text-xs font-semibold text-amber-500">남은 것</h4><ul className="list-disc space-y-1 pl-4 text-xs">{detail.remaining.map((d, i) => <li key={i}>{d}</li>)}</ul></div>
           </div>

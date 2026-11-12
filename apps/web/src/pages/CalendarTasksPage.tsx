@@ -45,7 +45,7 @@ export default function CalendarTasksPage() {
   const selectedEvents = eventsOn(selected);
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
+    <div className="grid gap-6 @4xl:grid-cols-[1fr_380px]">
       <div className="space-y-6">
         <Card>
           <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -100,7 +100,7 @@ export default function CalendarTasksPage() {
                       onDoubleClick={() => setEventModal({ open: true })}
                       className={cn(
                         'flex flex-col gap-1 border-b border-r border-border p-1 text-left transition-colors hover:bg-surface-2 [&:nth-child(7n)]:border-r-0',
-                        view === 'month' ? 'min-h-16 sm:min-h-24' : 'min-h-48',
+                        view === 'month' ? 'min-h-16 @xl:min-h-24' : 'min-h-48',
                         isSel && 'bg-accent/5 ring-1 ring-inset ring-accent/50',
                       )}
                     >
@@ -119,7 +119,7 @@ export default function CalendarTasksPage() {
                       {dayEvents.slice(0, max).map((e) => (
                         <span
                           key={e.id}
-                          className="hidden truncate rounded px-1 py-0.5 text-[11px] sm:block"
+                          className="hidden truncate rounded px-1 py-0.5 text-[11px] @xl:block"
                           style={{ background: `${e.color ?? CATEGORY_COLOR[e.category]}22`, color: e.color ?? CATEGORY_COLOR[e.category] }}
                         >
                           {!e.allDay && view === 'week' && `${fmtTime(e.startAt)} `}
@@ -127,9 +127,9 @@ export default function CalendarTasksPage() {
                         </span>
                       ))}
                       {dayEvents.length > 0 && (
-                        <span className="text-[10px] text-muted sm:hidden">● {dayEvents.length}</span>
+                        <span className="text-[10px] text-muted @xl:hidden">● {dayEvents.length}</span>
                       )}
-                      {dayEvents.length > max && <span className="hidden text-[10px] text-muted sm:block">+{dayEvents.length - max}개</span>}
+                      {dayEvents.length > max && <span className="hidden text-[10px] text-muted @xl:block">+{dayEvents.length - max}개</span>}
                     </button>
                   );
                 })}

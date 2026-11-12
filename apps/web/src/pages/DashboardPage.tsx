@@ -78,21 +78,21 @@ export default function DashboardPage() {
           <h3 className="text-lg font-bold sm:text-xl">오늘은 무엇부터 할까요?</h3>
           <p className="mt-1.5 text-sm leading-6 text-muted">{data ? <>일정 {data.todayEvents.length}개 · 오늘 마감 {data.tasks.dueToday.length}개{data.tasks.overdue.length > 0 && <span className="ml-2 text-red-500">지난 마감 {data.tasks.overdue.length}개</span>}</> : 'AI 비서와 함께 오늘의 우선순위를 정해보세요.'}</p>
         </div>
-        <Link to="/assistant" className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-accent-strong px-5 py-3 text-sm font-semibold text-white hover:brightness-95 sm:w-auto">브리핑 보기<ArrowUpRight className="size-4" /></Link>
+        <Link to="/assistant" className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-accent-strong px-5 py-3 text-sm font-semibold text-white hover:brightness-95 @xl:w-auto">브리핑 보기<ArrowUpRight className="size-4" /></Link>
       </section>
 
       {error ? (
         <ErrorState message={error} onRetry={reload} />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 @3xl:grid-cols-4">
             <Stat icon={CalendarDays} label="오늘 일정" value={data?.todayEvents.length ?? '–'} tone="text-accent" />
             <Stat icon={Clock} label="오늘 마감" value={data?.tasks.dueToday.length ?? '–'} tone="text-amber-500" />
             <Stat icon={AlertCircle} label="지난 마감" value={data?.tasks.overdue.length ?? '–'} tone="text-red-500" />
             <Stat icon={CheckCircle2} label="전체 진행률" value={data ? `${data.stats.rate}%` : '–'} tone="text-emerald-500" />
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid gap-6 @3xl:grid-cols-3">
             <Card title="오늘의 일정" icon={CalendarDays} action={<Link to="/calendar" className="text-xs text-accent hover:underline">캘린더</Link>}>
               {loading && !data ? (
                 <Skeleton lines={3} />
@@ -107,7 +107,7 @@ export default function DashboardPage() {
               )}
             </Card>
 
-            <Card title="해야 할 일" icon={ListTodo} className="lg:col-span-2" action={<Link to="/calendar" className="text-xs text-accent hover:underline">전체 보기</Link>}>
+            <Card title="해야 할 일" icon={ListTodo} className="@3xl:col-span-2" action={<Link to="/calendar" className="text-xs text-accent hover:underline">전체 보기</Link>}>
               {actionError && <p className="mb-2 text-xs text-red-500">{actionError}</p>}
               {loading && !data ? (
                 <Skeleton lines={4} />
@@ -147,7 +147,7 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid gap-6 @3xl:grid-cols-3">
             <Card title="카테고리별 진행률" icon={TrendingUp}>
               {loading && !data ? (
                 <Skeleton lines={3} />
@@ -194,7 +194,7 @@ export default function DashboardPage() {
             <Shortcut icon={Sparkles} title="AI 비서 · 아침 브리핑" to="/assistant" text="일정·할 일·복습·프로젝트·뉴스를 모아 오늘의 우선순위를 보여주고, 채팅으로 정리를 도와줘요." />
           </div>
 
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 @2xl:grid-cols-3">
             <DueReviewCard />
             <Shortcut icon={Newspaper} title="오늘의 뉴스" to="/news" text="매일 아침 7시에 모은 IT·경제 뉴스와 분야별 브리핑을 확인하세요." />
             <Shortcut icon={FolderGit2} title="프로젝트 현황" to="/projects" text="작업 완료율과 AI 추정 진행률, GitHub 최근 활동, 주간 보고서를 확인하세요." />

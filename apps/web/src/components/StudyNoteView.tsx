@@ -56,7 +56,7 @@ export function NoteEditor({
         <Field label="제목">
           <Input value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={200} autoFocus />
         </Field>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 @xl:grid-cols-2">
           <Field label="과목">
             <Select value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
               <option value="">미분류</option>
@@ -219,7 +219,7 @@ export default function StudyNoteView({
     <div className="space-y-6">
       <Card>
         <div className="mb-4 flex flex-wrap items-start gap-2">
-          <button onClick={onBack} className="rounded-md p-1 text-muted hover:bg-surface-2 lg:hidden" aria-label="목록으로">
+          <button onClick={onBack} className="rounded-md p-1 text-muted hover:bg-surface-2 @4xl:hidden" aria-label="목록으로">
             <ArrowLeft className="size-4" />
           </button>
           <div className="min-w-[12rem] flex-1">

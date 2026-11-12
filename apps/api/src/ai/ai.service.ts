@@ -10,8 +10,10 @@ import { createHash } from 'node:crypto';
 import { ClaudeCodeService } from './claude-code.service';
 import { GeminiService } from './gemini.service';
 
-/** CLI 프로세스를 동시에 너무 많이 띄우지 않도록 제한 */
+/** CLI 프로세스를 동시에 너무 많이 띄우지 않도록 제한. 넘치는 요청은 거절하지 않고 차례를 기다린다 */
 const MAX_CONCURRENT = 2;
+/** 차례를 이만큼 기다려도 안 오면 그때 알린다 */
+const QUEUE_WAIT_MS = 5 * 60_000;
 
 /**
  * 모든 AI 호출의 단일 진입점. 프로바이더 교체, 동시 실행 제한, 사용량·오류 기록을 담당한다.
@@ -21,6 +23,7 @@ const MAX_CONCURRENT = 2;
 export class AiService {
   private readonly logger = new Logger(AiService.name);
   private inFlight = 0;
+  private waiting: (() => void)[] = [];
 
   constructor(
     private readonly config: ConfigService,
@@ -125,10 +128,7 @@ export class AiService {
   }
 
   async complete(userId: string, feature: string, req: AiRequest, expectedScope?: string): Promise<AiResult> {
-    if (this.inFlight >= MAX_CONCURRENT) {
-      throw new HttpException('AI 요청이 처리 중입니다. 잠시 후 다시 시도해주세요.', 429);
-    }
-    this.inFlight++;
+    await this.acquire();
     const started = Date.now();
     let attemptedProvider: string | undefined;
     try {
@@ -152,8 +152,27 @@ export class AiService {
       if (e instanceof AiError) throw new HttpException(e.message, e.status);
       throw new HttpException('AI 요청 중 오류가 발생했습니다.', 502);
     } finally {
-      this.inFlight--;
+      this.release();
     }
+  }
+
+  /** 자리가 나면 바로, 아니면 앞 요청이 끝날 때까지 기다린다 (순서대로) */
+  private acquire(): Promise<void> {
+    if (this.inFlight < MAX_CONCURRENT) { this.inFlight++; return Promise.resolve(); }
+    return new Promise((resolve, reject) => {
+      const turn = () => { clearTimeout(timer); resolve(); };
+      const timer = setTimeout(() => {
+        this.waiting = this.waiting.filter(w => w !== turn);
+        reject(new HttpException('앞선 AI 요청이 오래 걸리고 있어요. 잠시 후 다시 시도해 주세요.', 429));
+      }, QUEUE_WAIT_MS);
+      this.waiting.push(turn);
+    });
+  }
+
+  /** 기다리는 요청이 있으면 자리를 그대로 넘긴다 */
+  private release() {
+    const next = this.waiting.shift();
+    if (next) next(); else this.inFlight--;
   }
 
   private async log(userId: string, feature: string, req: AiRequest, started: number, out: { result?: AiResult; error?: string; provider?: string }) {

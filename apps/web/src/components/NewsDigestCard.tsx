@@ -44,7 +44,7 @@ export default function NewsDigestCard() {
   const articles = hasSummary ? analysis.sourceArticles ?? briefing?.articles ?? [] : briefing?.articles ?? [];
   return <Card title="오늘의 뉴스 요약" icon={Newspaper} action={<Link to="/news" className="text-xs font-medium text-accent hover:underline">전체 뉴스 보기 →</Link>}>
     <div className="mb-4 flex flex-wrap items-center gap-2">
-      <Select aria-label="뉴스 요약 분야" className="sm:max-w-44" value={category} disabled={analyzing} onChange={e => setCategory(e.target.value)}>
+      <Select aria-label="뉴스 요약 분야" className="@xl:max-w-44" value={category} disabled={analyzing} onChange={e => setCategory(e.target.value)}>
         <option value="">전체 분야</option>
         {Object.entries(newsCategories).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
       </Select>

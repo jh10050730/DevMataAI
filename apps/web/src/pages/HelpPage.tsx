@@ -39,7 +39,7 @@ export default function HelpPage() {
         <p className="mt-2 text-[15px] text-muted">DevMata AI를 처음 쓰는 방법과 자주 묻는 질문이에요.</p>
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 @3xl:grid-cols-2">
         <Section icon={Bot} title="AI 연결">
           <p>DevMata AI는 <b>내 PC에 로그인한 내 AI 계정</b>으로 동작해요. 다른 사람의 사용량을 쓰지 않아요.</p>
           <p><Link to="/settings" className="text-accent hover:underline">설정 → 외부 연동</Link>에서 안내에 따라 AI 계정을 연결하고 <b>연결 테스트</b>를 눌러 확인하세요.</p>

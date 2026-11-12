@@ -51,7 +51,7 @@ export default function GettingStartedCard({ userId }: { userId: string }) {
           <X className="size-4" />
         </button>
       </div>
-      <ul className="grid gap-2 sm:grid-cols-2">
+      <ul className="grid gap-2 @xl:grid-cols-2">
         {STEPS.map(step => {
           const ok = data[step.key];
           return (

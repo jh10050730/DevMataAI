@@ -2,7 +2,7 @@
 const { app, BrowserWindow, Menu, Tray, dialog, nativeImage, shell } = require('electron');
 const { join } = require('node:path');
 const { loadConfig } = require('./config.cjs');
-const { appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, isFocusRequest, resetRoute, updateAction } = require('./paths.cjs');
+const { appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, isFocusRequest, isReloadKey, resetRoute, updateAction } = require('./paths.cjs');
 const { startApi } = require('./server.cjs');
 const { trayIcon, windowIcon } = require('./icon.cjs');
 const { createUpdater } = require('./updater.cjs');
@@ -80,6 +80,10 @@ function createWindow(firstUrl) {
     if (app.devmataPort && isAppUrl(url, app.devmataPort)) return;
     event.preventDefault();
     if (isExternalUrl(url)) void shell.openExternal(url);
+  });
+  // 메뉴를 꺼 두어서 기본 새로고침 단축키가 없다: Ctrl+R · F5 로 화면을 다시 불러온다
+  win.webContents.on('before-input-event', (event, input) => {
+    if (isReloadKey(input)) { event.preventDefault(); win.webContents.reload(); }
   });
   win.on('close', event => { if (!quitting) { event.preventDefault(); win.hide(); } });
   win.on('closed', () => { win = null; });

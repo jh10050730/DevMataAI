@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { cn } from './ui';
 import NotificationBell from './NotificationBell';
+import AssistantPanel, { AssistantToggle } from './AssistantPanel';
+import { AssistantChatProvider, useAssistantChat } from '../context/AssistantChatContext';
 
 const NAV = [
   { to: '/', label: '홈', icon: House, group: '나의 하루' },
@@ -38,7 +40,12 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   </nav>;
 }
 
+/** 로그인한 화면 전체. AI 대화는 여기서 한 번만 불러와 모든 화면(오른쪽 패널·AI 비서 화면)이 같이 쓴다 */
 export default function Layout() {
+  return <AssistantChatProvider><Shell /></AssistantChatProvider>;
+}
+
+function Shell() {
   const { user, logout } = useAuth();
   const { theme, toggle } = useTheme();
   const location = useLocation();
@@ -48,9 +55,13 @@ export default function Layout() {
   const [q, setQ] = useState('');
   const mobilePanel = useRef<HTMLElement>(null);
   const userMenu = useRef<HTMLDivElement>(null);
+  const { setPanelOpen } = useAssistantChat();
+  const onAssistantPage = location.pathname.startsWith('/assistant');
   const page = NAV.find(n => n.to === '/' ? location.pathname === '/' : location.pathname.startsWith(n.to)) ?? NAV[0];
 
   useEffect(() => { setMenuOpen(false); setMobileOpen(false); }, [location.pathname]);
+  // AI 비서 화면에는 같은 대화가 이미 크게 있으므로 패널을 닫는다
+  useEffect(() => { if (onAssistantPage) setPanelOpen(false); }, [onAssistantPage, setPanelOpen]);
   useEffect(() => {
     const wideScreen = window.matchMedia('(min-width: 1024px)');
     const close = () => { if (wideScreen.matches) setMobileOpen(false); };
@@ -93,17 +104,18 @@ export default function Layout() {
       </aside>
     </div>}
     <div className="flex min-w-0 flex-1 flex-col" inert={mobileOpen}>
-      <header className="z-30 flex h-[72px] shrink-0 items-center gap-3 bg-surface px-4 sm:px-7 lg:px-10">
+      <header className="@container z-30 flex h-[72px] shrink-0 items-center gap-3 bg-surface px-4 sm:px-7 lg:px-10">
         <button className="rounded-xl p-2 text-muted hover:bg-surface-2 lg:hidden" onClick={() => setMobileOpen(true)} aria-label="메뉴 열기" aria-expanded={mobileOpen}><Menu className="size-5" /></button>
         <h1 className="truncate text-base font-semibold">{page.label}</h1>
-        <form onSubmit={onSearch} role="search" className="ml-auto hidden w-full max-w-[280px] md:block">
+        <form onSubmit={onSearch} role="search" className="ml-auto hidden w-full max-w-[280px] @2xl:block">
           <div className="flex items-center rounded-xl border border-transparent bg-surface-2 focus-within:border-accent">
             <Search className="ml-3 size-4 shrink-0 text-muted" />
             <input aria-label="워크스페이스 통합 검색" value={q} maxLength={100} onChange={e => setQ(e.target.value)} placeholder="무엇을 찾고 있나요?" className="min-w-0 flex-1 bg-transparent py-2.5 pl-2.5 pr-1 text-xs outline-none" />
             <button type="submit" aria-label="검색" className="m-1 rounded-lg p-1.5 text-muted hover:bg-surface-2"><ArrowRight className="size-3.5" /></button>
           </div>
         </form>
-        <button onClick={() => navigate('/assistant')} aria-label="통합 검색으로 이동" className="ml-auto rounded-xl p-2.5 text-muted hover:bg-surface-2 md:hidden"><Search className="size-[18px]" /></button>
+        <button onClick={() => navigate('/assistant')} aria-label="통합 검색으로 이동" className="ml-auto rounded-xl p-2.5 text-muted hover:bg-surface-2 @2xl:hidden"><Search className="size-[18px]" /></button>
+        {!onAssistantPage && <AssistantToggle />}
         <NotificationBell />
         <button onClick={toggle} className="rounded-xl p-2.5 text-muted hover:bg-surface-2 hover:text-accent" aria-label={theme === 'dark' ? '밝은 테마로 전환' : '어두운 테마로 전환'} title={theme === 'dark' ? '밝은 테마' : '어두운 테마'}>{theme === 'dark' ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />}</button>
         <div ref={userMenu} className="relative ml-1">
@@ -119,8 +131,10 @@ export default function Layout() {
         </div>
       </header>
       <main id="main-content" className="workspace-scroll flex-1 overflow-y-auto overscroll-contain px-4 py-7 sm:px-7 sm:py-10 lg:px-10">
-        <div key={location.pathname} className="workspace-page mx-auto max-w-[1120px]"><Outlet /></div>
+        {/* @container: 화면 안쪽 칸 나누기는 창이 아니라 이 본문 폭을 기준으로 한다 (오른쪽 AI 패널이 열리면 아래로 내려간다) */}
+        <div key={location.pathname} className="workspace-page @container mx-auto max-w-[1120px]"><Outlet /></div>
       </main>
     </div>
+    <AssistantPanel />
   </div>;
 }

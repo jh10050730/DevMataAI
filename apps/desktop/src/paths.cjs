@@ -100,6 +100,13 @@ function isFocusRequest(message) {
   return !!message && message.type === 'focus';
 }
 
+/** 새로고침 단축키 (Ctrl+R · F5, 키를 누를 때만) */
+function isReloadKey(input) {
+  if (!input || input.type !== 'keyDown') return false;
+  if (input.key === 'F5' && !input.control && !input.alt && !input.meta) return true;
+  return !!(input.control || input.meta) && !input.alt && !input.shift && String(input.key).toLowerCase() === 'r';
+}
+
 /** API 가 보낸 "업데이트" 요청. check·install 만 허용, 아니면 null */
 function updateAction(message) {
   if (!message || message.type !== 'update') return null;
@@ -111,4 +118,4 @@ function isExternalUrl(url) {
   try { return ['http:', 'https:'].includes(new URL(url).protocol); } catch { return false; }
 }
 
-module.exports = { APP_DEFAULT_KEYS, appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, isFocusRequest, resetRoute, updateAction };
+module.exports = { APP_DEFAULT_KEYS, appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, isFocusRequest, isReloadKey, resetRoute, updateAction };

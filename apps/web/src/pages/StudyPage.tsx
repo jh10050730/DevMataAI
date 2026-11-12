@@ -55,9 +55,9 @@ export default function StudyPage() {
   const showDetail = creating || !!selectedId;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[260px_320px_1fr]">
+    <div className="grid gap-6 @4xl:grid-cols-[260px_320px_1fr]">
       {/* 과목 / 태그 */}
-      <div className={cn('space-y-6', showDetail && 'hidden lg:block')}>
+      <div className={cn('space-y-6', showDetail && 'hidden @4xl:block')}>
         <SubjectsPanel
           overview={overview}
           subjectFilter={subjectFilter}
@@ -86,7 +86,7 @@ export default function StudyPage() {
       </div>
 
       {/* 노트 목록 */}
-      <div className={cn('space-y-3', showDetail && 'hidden lg:block')}>
+      <div className={cn('space-y-3', showDetail && 'hidden @4xl:block')}>
         <div className="flex gap-2">
           <Button onClick={() => { setParams({}); setCreating(true); }} className="flex-1">
             <Plus className="size-4" /> 새 노트
@@ -154,7 +154,7 @@ export default function StudyPage() {
       </div>
 
       {/* 노트 상세 / 작성 */}
-      <div className={cn(!showDetail && 'hidden lg:block')}>
+      <div className={cn(!showDetail && 'hidden @4xl:block')}>
         {creating ? (
           <NoteEditor
             subjects={subjects.data ?? []}
