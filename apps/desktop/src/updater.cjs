@@ -58,4 +58,9 @@ function createUpdater({ autoUpdater, onState }) {
   };
 }
 
-module.exports = { CHECK_EVERY_MS, FIRST_CHECK_MS, createUpdater, shortError };
+/** 업데이트를 다 받았을 때 Windows 알림을 띄울지: 같은 버전은 한 번만 */
+function readyToNotify(state, lastNotified) {
+  return !!state && state.state === 'ready' && typeof state.version === 'string' && state.version !== lastNotified;
+}
+
+module.exports = { CHECK_EVERY_MS, FIRST_CHECK_MS, createUpdater, readyToNotify, shortError };

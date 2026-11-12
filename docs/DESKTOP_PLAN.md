@@ -105,7 +105,7 @@ POST /api/desktop/update  { action: "check" | "install" } → 202 (install 은 �
 | C5 | `GET /api/desktop/info`, `POST /api/desktop/open` (버전·데이터 폴더·로그 폴더) — 위 인터페이스 약속대로 → **완료** (`apps/api/src/desktop`, 화면은 도움말 → 앱 정보. `update` 는 C4 에서) |
 | C6 | 설치본 자동 백업: 하루 한 번 `%APPDATA%\DevMata AI\backups` 에 `VACUUM INTO`, 최근 7개 보관. 복원 방법 안내 → **완료** (`apps/api/src/backup`, `DB_BACKUP_DIR`·`DB_BACKUP_KEEP`, 복원은 도움말 FAQ) |
 | C7 | 로그 크기 제한 (`logs/api.log` 5MB 넘으면 교체, 3개 보관) → **완료** (`server.cjs` rotateLog) |
-| C8 | 버전 관리: `npm run release <버전>` → 버전 올리기·태그. 화면 표시 버전과 설치 파일 버전 일치 → **완료** (`npm run release -- patch`, `minor`, `major` 또는 `1.2.3`, 바로 올리려면 `--push`. `scripts/release.mjs`) |
+| C8 | 버전 관리: `npm run release <버전>` → 버전 올리기·태그. 화면 표시 버전과 설치 파일 버전 일치 → **완료** (`npm run release -- patch`, `minor`, `major` 또는 `1.2.3`, 바로 올리려면 `--push`. `scripts/release.mjs`). 큰 업데이트(minor·major, 예 0.2→0.3)는 `apps/web/src/releaseNotes.json` 에 새로워진 점을 먼저 적어야 배포되고, 업데이트 후 처음 들어오면 그 내용이 창으로 뜬다. patch 는 안내 없음 |
 | C9 | 설치본에서 Claude Code 찾기 점검 (설치본은 PATH 가 다를 수 있음: `%APPDATA%\npm`, `%LOCALAPPDATA%\…` 등) — Codex 의 확인 코드와 함께 → **완료**: `findClaude`(PATH·`~\.local\bin`·WinGet·npm) 가 이 PC 에서 찾음. Codex CLI 는 `chatgpt.service.ts` 가 npm 전역 설치 위치의 `codex.exe` 를 직접 찾고 설치본 API 도 같은 사용자 환경변수를 받으므로 앱이 따로 넘길 필요 없음 |
 
 **Codex** (자기 파일 경계 안에서. 새 API 가 필요하면 위 약속을 쓰거나 요청 표에 적기)

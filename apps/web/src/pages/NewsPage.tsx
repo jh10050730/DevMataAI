@@ -21,7 +21,7 @@ export default function NewsPage() {
   const [version, setVersion] = useState(0);
   const [analysis, setAnalysis] = useState<Analysis>();
   const [analyzing, setAnalyzing] = useState(false);
-  const [schedule, setSchedule] = useState<{ enabled: boolean; notice: string; lastAttemptAt: string | null; completedDay: string | null }>();
+  const [schedule, setSchedule] = useState<{ enabled: boolean; notice: string; lastCollectedAt: string | null }>();
   async function analyze() {
     setAnalyzing(true);
     try { setAnalysis(await api.post<Analysis>(`/news/briefing/analyze${category ? '?category=' + category : ''}`)); }
@@ -54,7 +54,7 @@ export default function NewsPage() {
       <div><h2 className="text-2xl font-semibold">매일 모아 보는 분야별 뉴스</h2><p className="mt-1 text-sm text-muted">IT · 경제 · 금융 · 부동산 · 국제 · 정치 · 사회</p></div>
       <Button onClick={refresh} loading={refreshing}><RefreshCw className="size-4" />뉴스 수집</Button>
     </header>
-    {schedule && <Card title={schedule.enabled ? '매일 오전 7시 자동 수집 · 한국 시간' : '자동 수집 꺼짐'}><p className="text-sm text-muted">{schedule.notice}</p><p className="mt-2 text-xs text-muted">마지막 자동 수집 시도: {schedule.lastAttemptAt ? new Date(schedule.lastAttemptAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : '아직 없음'} · 수집 완료일: {schedule.completedDay ?? '아직 없음'}</p></Card>}
+    {schedule && <Card title={schedule.enabled ? '매일 오전 7시 자동 수집 · 한국 시간' : '자동 수집 꺼짐'}><p className="text-sm text-muted">{schedule.notice}</p><p className="mt-2 text-xs text-muted">마지막 수집: {schedule.lastCollectedAt ? new Date(schedule.lastCollectedAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'medium', timeStyle: 'short' }) : '아직 없음'}</p></Card>}
     <div className="flex flex-wrap gap-2" aria-label="분야 선택">{[['', '전체'], ...Object.entries(categories).filter(([key]) => !['AI', 'SECURITY', 'DEV', 'TECH'].includes(key))].map(([key, label]) => <Button key={key} variant={category === key ? 'primary' : 'secondary'} aria-pressed={category === key} disabled={analyzing} onClick={() => { setCategory(key); setAnalysis(undefined); }}>{label}</Button>)}</div>
     {status && <p role="status" className="text-sm text-muted">{status} · 수집 간격 5분</p>}
     {error && <ErrorState message={error} onRetry={() => setVersion(v => v + 1)} />}

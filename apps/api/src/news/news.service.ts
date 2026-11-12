@@ -58,7 +58,9 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
   }
   async schedule() {
     const state = await this.db.newsCollectionState.findUnique({ where: { id: 'daily' } });
-    return { enabled: this.autoEnabled, time: '07:00', timezone: 'Asia/Seoul', nextRunAt: nextCollection().toISOString(), lastAttemptAt: state?.lastAttemptAt ?? null, completedDay: state?.completedDay ?? null, lastResult: state ? JSON.parse(state.lastResult) : null, notice: 'API 서버가 실행 중일 때 매일 오전 7시 자동 수집합니다. 놓친 수집은 오전 7시 이후 서버 시작 시 실행하고, 실패한 수집은 30분 간격으로 재시도합니다.' };
+    // 이 기록이 생기기 전 버전에서 수집한 경우: 가장 최근에 들어온 기사 시각으로 대신 보여 준다
+    const lastCollectedAt = state?.lastCollectedAt ?? (await this.db.newsArticle.findFirst({ orderBy: { collectedAt: 'desc' }, select: { collectedAt: true } }))?.collectedAt ?? null;
+    return { enabled: this.autoEnabled, time: '07:00', timezone: 'Asia/Seoul', nextRunAt: nextCollection().toISOString(), lastCollectedAt, lastAttemptAt: state?.lastAttemptAt ?? null, completedDay: state?.completedDay ?? null, lastResult: state ? JSON.parse(state.lastResult) : null, notice: 'API 서버가 실행 중일 때 매일 오전 7시 자동 수집합니다. 놓친 수집은 오전 7시 이후 서버 시작 시 실행하고, 실패한 수집은 30분 간격으로 재시도합니다.' };
   }
   private running?: Promise<unknown>;
   private lastRefresh = 0;
@@ -205,6 +207,11 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
       } catch { return { name: source.name, success: false, message: '피드를 가져오지 못했습니다. 잠시 후 다시 시도하세요.' }; }
     }));
     this.lastRefresh = sources.some(s => s.success) ? Date.now() : 0;
+    // 화면에 보여 줄 "마지막 수집" 시각: 자동·수동 상관없이 한 곳이라도 받아 왔으면 기록
+    if (this.lastRefresh) {
+      const now = new Date(this.lastRefresh);
+      await this.db.newsCollectionState.upsert({ where: { id: 'daily' }, create: { id: 'daily', lastCollectedAt: now }, update: { lastCollectedAt: now } }).catch(() => Logger.warn('마지막 수집 시각 저장 실패.', 'News'));
+    }
     this.result = { added, sources, refreshedAt: new Date().toISOString() };
     return this.result;
   }

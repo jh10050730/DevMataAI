@@ -22,8 +22,8 @@ jobs:
       - name: 빌드 작업 폴더 정하기
         shell: bash
         run: echo "DEVMATA_BUILD_DIR=$(cygpath -m "$RUNNER_TEMP")/devmata-build" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm

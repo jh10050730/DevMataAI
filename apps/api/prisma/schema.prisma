@@ -29,6 +29,8 @@ model NewsCollectionState {
   id            String    @id @default("daily")
   completedDay  String?
   lastAttemptAt DateTime?
+  /// 자동·수동 상관없이 마지막으로 피드를 받아 온 시각 (한 곳이라도 성공)
+  lastCollectedAt DateTime?
   lastResult    String    @default("{}")
 }
 

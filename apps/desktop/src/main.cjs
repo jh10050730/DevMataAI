@@ -1,11 +1,11 @@
 // DevMata AI 데스크톱 앱: API 서버를 띄우고 앱 창에 화면을 연다. 창을 닫으면 트레이로 숨고, 트레이 메뉴에서 종료한다.
-const { app, BrowserWindow, Menu, Tray, dialog, nativeImage, powerMonitor, shell } = require('electron');
+const { app, BrowserWindow, Menu, Notification, Tray, dialog, nativeImage, powerMonitor, shell } = require('electron');
 const { join } = require('node:path');
 const { claimAutoStartDefault, loadConfig } = require('./config.cjs');
 const { appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, isFocusRequest, isReloadKey, resetRoute, updateAction } = require('./paths.cjs');
 const { startApi } = require('./server.cjs');
 const { trayIcon, windowIcon } = require('./icon.cjs');
-const { createUpdater } = require('./updater.cjs');
+const { createUpdater, readyToNotify } = require('./updater.cjs');
 
 const APP_NAME = 'DevMata AI';
 app.setName(APP_NAME);
@@ -143,10 +143,21 @@ function startUpdater() {
     onState: state => {
       if (api?.connected) api.send({ type: 'update-state', ...state });
       refreshTray();
+      notifyUpdateReady(state);
     },
   });
   if (api?.connected) api.send({ type: 'update-state', ...updater.state });
   updater.schedule();
+}
+
+/** 새 버전을 다 받으면 Windows 알림으로 알린다 (트레이 메뉴를 열지 않아도 알 수 있게). 누르면 재시작해서 설치 */
+let notifiedUpdate = null;
+function notifyUpdateReady(state) {
+  if (!readyToNotify(state, notifiedUpdate) || !Notification.isSupported()) return;
+  notifiedUpdate = state.version;
+  const notice = new Notification({ title: `${APP_NAME} 새 버전 준비됨`, body: `v${state.version}을 받아 두었어요. 이 알림을 누르면 재시작해서 바로 설치해요.`, icon: windowIcon() });
+  notice.on('click', installUpdate);
+  notice.show();
 }
 
 function installUpdate() {

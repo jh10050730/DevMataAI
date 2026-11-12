@@ -22,6 +22,18 @@ export function parseVersion(text) {
 
 const greater = (a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
 
+/** 앱에 처음 들어올 때 보여 주는 업데이트 안내 (큰 업데이트: 앞의 두 자리가 바뀔 때만) */
+export const RELEASE_NOTES = 'apps/web/src/releaseNotes.json';
+
+/** 큰 업데이트인데 안내 글이 없으면 그 키("0.3")를, 아니면 null 을 돌려준다 */
+export function missingReleaseNote(current, next, notes) {
+  const [cm, cn] = parseVersion(current), [nm, nn] = parseVersion(next);
+  if (cm === nm && cn === nn) return null;
+  const key = `${nm}.${nn}`;
+  const note = notes?.[key];
+  return note && typeof note.title === 'string' && note.title.trim() && Array.isArray(note.items) && note.items.length ? null : key;
+}
+
 /** 지금 버전과 요청(patch·minor·major·x.y.z)으로 다음 버전을 정한다. 지금보다 커야 한다 */
 export function nextVersion(current, request) {
   const [major, minor, patch] = parseVersion(current);
@@ -72,6 +84,9 @@ function main() {
   const version = nextVersion(current, request);
   const tag = `v${version}`;
   if (git('tag', '--list', tag)) throw new Error(`태그 ${tag} 가 이미 있습니다.`);
+  const notes = JSON.parse(readFileSync(join(root, RELEASE_NOTES), 'utf8'));
+  const missing = missingReleaseNote(current, version, notes);
+  if (missing) throw new Error(`큰 업데이트(${missing})입니다. 앱에 처음 들어올 때 보여 줄 새로워진 점을 ${RELEASE_NOTES} 의 "${missing}" 에 먼저 적고 커밋하세요.`);
 
   for (const file of MANIFESTS) writeFileSync(join(root, file), setManifestVersion(readFileSync(join(root, file), 'utf8'), version));
   writeFileSync(join(root, LOCK), setLockVersion(readFileSync(join(root, LOCK), 'utf8'), version));

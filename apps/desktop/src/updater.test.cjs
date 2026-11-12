@@ -70,3 +70,12 @@ test('시작 30초 뒤와 6시간마다 확인', () => {
   assert.equal(FIRST_CHECK_MS, 30_000);
   assert.equal(CHECK_EVERY_MS, 6 * 60 * 60 * 1000);
 });
+
+test('update ready notice shows once per version', () => {
+  const { readyToNotify } = require('./updater.cjs');
+  assert.equal(readyToNotify({ state: 'ready', version: '0.3.0' }, null), true);
+  assert.equal(readyToNotify({ state: 'ready', version: '0.3.0' }, '0.3.0'), false);
+  assert.equal(readyToNotify({ state: 'ready', version: '0.3.1' }, '0.3.0'), true);
+  assert.equal(readyToNotify({ state: 'downloading', version: '0.3.0', percent: 50 }, null), false);
+  assert.equal(readyToNotify({ state: 'ready' }, null), false);
+});

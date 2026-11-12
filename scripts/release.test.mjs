@@ -3,7 +3,17 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 import { root } from './db-tools.mjs';
-import { LOCK, MANIFESTS, nextVersion, parseVersion, setLockVersion, setManifestVersion } from './release.mjs';
+import { LOCK, MANIFESTS, RELEASE_NOTES, missingReleaseNote, nextVersion, parseVersion, setLockVersion, setManifestVersion } from './release.mjs';
+
+test('큰 업데이트(앞의 두 자리)는 안내 글이 있어야 배포, 작은 업데이트는 없어도 됨', () => {
+  const notes = { '0.3': { title: '0.3', items: ['새 기능'] }, '1.0': { title: '', items: ['x'] } };
+  assert.equal(missingReleaseNote('0.3.0', '0.3.1', {}), null);
+  assert.equal(missingReleaseNote('0.2.4', '0.3.0', notes), null);
+  assert.equal(missingReleaseNote('0.3.0', '0.4.0', notes), '0.4');
+  assert.equal(missingReleaseNote('0.9.0', '1.0.0', notes), '1.0');
+  const real = JSON.parse(readFileSync(join(root, RELEASE_NOTES), 'utf8'));
+  assert.ok(Object.keys(real).length > 0);
+});
 
 test('다음 버전: patch·minor·major·직접 지정, 지금보다 커야 함', () => {
   assert.equal(nextVersion('0.1.0', 'patch'), '0.1.1');

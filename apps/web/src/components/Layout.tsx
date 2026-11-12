@@ -6,6 +6,8 @@ import { useTheme } from '../context/ThemeContext';
 import { cn } from './ui';
 import NotificationBell from './NotificationBell';
 import AssistantPanel, { AssistantToggle } from './AssistantPanel';
+import WhatsNew from './WhatsNew';
+import UpdateBanner from './UpdateBanner';
 import { AssistantChatProvider, useAssistantChat } from '../context/AssistantChatContext';
 
 const NAV = [
@@ -131,11 +133,13 @@ function Shell() {
           </div>}
         </div>
       </header>
+      <UpdateBanner />
       <main id="main-content" className="workspace-scroll flex-1 overflow-y-auto overscroll-contain px-4 py-7 sm:px-7 sm:py-10 lg:px-10">
         {/* @container: 화면 안쪽 칸 나누기는 창이 아니라 이 본문 폭을 기준으로 한다 (오른쪽 AI 패널이 열리면 아래로 내려간다) */}
         <div key={location.pathname} className="workspace-page @container mx-auto max-w-[1120px]"><Outlet /></div>
       </main>
     </div>
     <AssistantPanel />
+    <WhatsNew />
   </div>;
 }
