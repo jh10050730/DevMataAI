@@ -54,6 +54,21 @@ describe('deadline notifications', () => {
     await service().sync();
     expect(await db().notification.count({ where: { targetId: { in: [task.id, event.id] } } })).toBe(0);
   });
+  it('꺼져 있던 사이 마감이 지난 할 일은 켜졌을 때 "마감 지남" 한 번 (일정·오래된 할 일·완료한 할 일은 제외)', async () => {
+    const ago = (hours: number) => new Date(Date.now() - hours * 3600000);
+    const missed = await db().task.create({ data: { userId: a.user.id, title: '어제 마감', dueDate: ago(20) } });
+    const old = await db().task.create({ data: { userId: a.user.id, title: '오래전 마감', dueDate: ago(24 * 5) } });
+    const done = await db().task.create({ data: { userId: a.user.id, title: '끝낸 일', dueDate: ago(20), completed: true } });
+    const ended = await db().event.create({ data: { userId: a.user.id, title: '끝난 일정', startAt: ago(3), endAt: ago(1) } });
+    await Promise.all([service().sync(), service().sync()]);
+    await service().sync();
+    const rows = await db().notification.findMany({ where: { targetId: { in: [missed.id, old.id, done.id, ended.id] } } });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ targetId: missed.id, milestone: 'OVERDUE', title: '할 일 마감 지남' });
+    await db().task.update({ where: { id: missed.id }, data: { completed: true } });
+    await service().sync();
+    expect(await db().notification.count({ where: { targetId: missed.id } })).toBe(0);
+  });
   it('알림 설정은 본인에게만 적용되고 인증·불필요한 필드는 차단', async () => {
     await api().get('/api/notifications').expect(401);
     await api().patch('/api/notifications/settings').set(auth()).send({ notificationInApp: false, notificationEmail: true }).expect(200);

@@ -4,7 +4,7 @@ const { mkdtempSync, readFileSync, rmSync, writeFileSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const { join } = require('node:path');
 const net = require('node:net');
-const { DEFAULT_PORT, loadConfig } = require('./config.cjs');
+const { DEFAULT_PORT, claimAutoStartDefault, loadConfig } = require('./config.cjs');
 const { appPaths, apiEnv, isAppUrl, isExternalUrl } = require('./paths.cjs');
 const { portFree } = require('./server.cjs');
 
@@ -22,6 +22,17 @@ test('config creates a secret once and keeps it', () => {
     assert.equal(JSON.parse(readFileSync(join(dir, 'config.json'), 'utf8')).jwtSecret, fixed.jwtSecret);
     writeFileSync(join(dir, 'config.json'), '{broken');
     assert.throws(() => loadConfig(dir), /설정 파일/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('auto start is turned on only on the first installed run', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'devmata-desktop-'));
+  try {
+    const config = loadConfig(dir);
+    assert.equal(claimAutoStartDefault(dir, config), true);
+    const again = loadConfig(dir);
+    assert.equal(again.jwtSecret, config.jwtSecret);
+    assert.equal(claimAutoStartDefault(dir, again), false);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 

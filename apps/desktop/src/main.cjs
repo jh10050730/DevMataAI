@@ -1,7 +1,7 @@
 // DevMata AI 데스크톱 앱: API 서버를 띄우고 앱 창에 화면을 연다. 창을 닫으면 트레이로 숨고, 트레이 메뉴에서 종료한다.
-const { app, BrowserWindow, Menu, Tray, dialog, nativeImage, shell } = require('electron');
+const { app, BrowserWindow, Menu, Tray, dialog, nativeImage, powerMonitor, shell } = require('electron');
 const { join } = require('node:path');
-const { loadConfig } = require('./config.cjs');
+const { claimAutoStartDefault, loadConfig } = require('./config.cjs');
 const { appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, isFocusRequest, isReloadKey, resetRoute, updateAction } = require('./paths.cjs');
 const { startApi } = require('./server.cjs');
 const { trayIcon, windowIcon } = require('./icon.cjs');
@@ -40,6 +40,8 @@ async function start() {
   const dataDir = app.getPath('userData');
   const config = loadConfig(dataDir);
   const paths = appPaths({ packaged: app.isPackaged, resourcesPath: process.resourcesPath });
+  // 설치본 첫 실행: 노트북을 켜면 알림이 오도록 Windows 시작 시 자동 실행을 기본으로 켠다 (트레이에서 끌 수 있음)
+  if (app.isPackaged && claimAutoStartDefault(dataDir, config)) app.setLoginItemSettings({ openAtLogin: true, args: ['--hidden'] });
   createTray();
   if (!startHidden) createWindow(loadingPage());
   const defaults = loadAppDefaults(paths.apiRoot);
@@ -62,6 +64,10 @@ async function start() {
     if (update === 'install') installUpdate();
   });
   startUpdater();
+  // 절전에서 깨어나거나 잠금을 풀면 API 에 알려 마감 알림을 바로 확인하게 한다
+  const wake = () => { if (api?.connected) api.send({ type: 'wake' }); };
+  powerMonitor.on('resume', wake);
+  powerMonitor.on('unlock-screen', wake);
   app.devmataUrl = `http://localhost:${config.port}/`;
   app.devmataPort = config.port;
   if (win) await win.loadURL(app.devmataUrl);

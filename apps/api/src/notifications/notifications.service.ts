@@ -4,6 +4,9 @@ import { MailService } from '../mail/mail.service';
 import { deadlineMilestone, eventDeadline } from './deadline.logic';
 import { desktopToastEnabled, showDesktopToast } from './desktop-toast';
 
+/** 데스크톱 앱(Electron)이 PC가 깨어났을 때 보내는 신호 */
+export const isWakeMessage = (message: unknown) => !!message && typeof message === 'object' && (message as { type?: unknown }).type === 'wake';
+
 @Injectable()
 export class NotificationsService implements OnModuleInit, OnModuleDestroy {
   private timer?: ReturnType<typeof setInterval>;
@@ -14,8 +17,11 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     if (process.env.NODE_ENV === 'test') return;
     const tick = () => { void this.sync().catch(() => Logger.warn('마감 알림 처리 실패. 다음 주기에 다시 시도합니다.', 'Notifications')); };
     this.timer = setInterval(tick, 60000); this.timer.unref(); tick();
+    // 데스크톱 앱: 절전에서 깨어나거나 잠금을 풀면 1분을 기다리지 않고 바로 확인한다
+    if (process.send) { this.onWake = (message: unknown) => { if (isWakeMessage(message)) tick(); }; process.on('message', this.onWake); }
   }
-  onModuleDestroy() { if (this.timer) clearInterval(this.timer); }
+  private onWake?: (message: unknown) => void;
+  onModuleDestroy() { if (this.timer) clearInterval(this.timer); if (this.onWake) process.off('message', this.onWake); }
   sync(now = new Date()) {
     if (!this.running) this.running = this.collect(now).finally(() => { this.running = undefined; });
     return this.running;
@@ -36,7 +42,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     const known = new Set(existing.map(row => [row.targetType, row.targetId, row.deadlineAt.getTime(), row.milestone].join(':')));
     const fresh: { userId: string; title: string; body: string; href: string }[] = [];
     for (const target of targets) {
-      const stage = deadlineMilestone(target.deadline, now);
+      const stage = deadlineMilestone(target.deadline, now, { overdue: target.type === 'TASK' });
       if (!stage) continue;
       const deadlineText = target.deadline.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'medium', timeStyle: 'short' });
       const title = `${target.type === 'TASK' ? '할 일' : '일정'} 마감 ${stage.label}`;
@@ -85,7 +91,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
   }
   async settings(userId: string) {
     const user = await this.db.user.findUniqueOrThrow({ where: { id: userId }, select: { notificationInApp: true, notificationEmail: true } });
-    return { ...user, emailConfigured: this.mail.configured, notice: '할 일 마감일·일정 종료 기준 한 달 전, 3주 전, 1주 전, 하루 전에 알립니다. 서버 실행 중 1분마다 확인하며, 놓친 알림은 현재 가장 가까운 단계 한 건만 생성합니다.', desktopEnabled: desktopToastEnabled() };
+    return { ...user, emailConfigured: this.mail.configured, notice: '할 일 마감일·일정 종료 기준 한 달 전, 3주 전, 1주 전, 하루 전에 알립니다. 앱이 켜져 있는 동안 1분마다, PC를 켜거나 절전에서 깨어나면 바로 확인합니다. 꺼져 있어 놓친 알림은 가장 가까운 단계 한 건만 보내고, 끝내지 않은 할 일의 마감이 그사이 지났다면 3일 안에 "마감 지남"을 한 번 알립니다.', desktopEnabled: desktopToastEnabled() };
   }
   async updateSettings(userId: string, data: { notificationInApp: boolean; notificationEmail: boolean }) {
     await this.db.user.update({ where: { id: userId }, data });
