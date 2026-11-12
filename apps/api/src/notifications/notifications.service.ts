@@ -29,8 +29,10 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
   private async collect(now: Date) {
     const [tasks, events, existing] = await Promise.all([
       this.db.task.findMany({ where: { completed: false, dueDate: { not: null } }, select: { id: true, userId: true, title: true, dueDate: true } }),
-      this.db.event.findMany({ select: { id: true, userId: true, title: true, endAt: true, allDay: true } }),
-      this.db.notification.findMany({ select: { id: true, targetType: true, targetId: true, deadlineAt: true, milestone: true } }),
+      // 반복 일정은 회차마다 한 달 전부터 알리면 너무 잦아서 마감 알림에서 뺀다 (아침 브리핑에서 알려 준다)
+      this.db.event.findMany({ where: { repeat: null }, select: { id: true, userId: true, title: true, endAt: true, allDay: true } }),
+      // 마감 알림만 다룬다 (아침 브리핑 같은 다른 알림은 건드리지 않는다)
+      this.db.notification.findMany({ where: { targetType: { in: ['TASK', 'EVENT'] } }, select: { id: true, targetType: true, targetId: true, deadlineAt: true, milestone: true } }),
     ]);
     const targets = [
       ...tasks.map(task => ({ id: task.id, userId: task.userId, title: task.title, deadline: task.dueDate!, type: 'TASK', href: '/calendar' })),
@@ -76,7 +78,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     return !!event && eventDeadline(event).getTime() === row.deadlineAt.getTime();
   }
   private async sendPending(now: Date) {
-    const pending = await this.db.notification.findMany({ where: { emailSentAt: null, dismissedAt: null, emailAttempts: { lt: 3 }, deadlineAt: { gt: now }, user: { notificationEmail: true }, OR: [{ nextEmailAttemptAt: null }, { nextEmailAttemptAt: { lte: now } }] }, include: { user: { select: { email: true } } }, orderBy: { createdAt: 'desc' }, take: 20 });
+    const pending = await this.db.notification.findMany({ where: { targetType: { in: ['TASK', 'EVENT'] }, emailSentAt: null, dismissedAt: null, emailAttempts: { lt: 3 }, deadlineAt: { gt: now }, user: { notificationEmail: true }, OR: [{ nextEmailAttemptAt: null }, { nextEmailAttemptAt: { lte: now } }] }, include: { user: { select: { email: true } } }, orderBy: { createdAt: 'desc' }, take: 20 });
     for (const row of pending) {
       if (deadlineMilestone(row.deadlineAt, now)?.key !== row.milestone || !(await this.stillCurrent(row))) continue;
       // Claim before sending: prevents simultaneous scheduler instances sending the same row.
@@ -90,10 +92,10 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     }
   }
   async settings(userId: string) {
-    const user = await this.db.user.findUniqueOrThrow({ where: { id: userId }, select: { notificationInApp: true, notificationEmail: true } });
-    return { ...user, emailConfigured: this.mail.configured, notice: '할 일 마감일·일정 종료 기준 한 달 전, 3주 전, 1주 전, 하루 전에 알립니다. 앱이 켜져 있는 동안 1분마다, PC를 켜거나 절전에서 깨어나면 바로 확인합니다. 꺼져 있어 놓친 알림은 가장 가까운 단계 한 건만 보내고, 끝내지 않은 할 일의 마감이 그사이 지났다면 3일 안에 "마감 지남"을 한 번 알립니다.', desktopEnabled: desktopToastEnabled() };
+    const user = await this.db.user.findUniqueOrThrow({ where: { id: userId }, select: { notificationInApp: true, notificationEmail: true, briefingEnabled: true, briefingHour: true } });
+    return { ...user, emailConfigured: this.mail.configured, notice: '할 일 마감일·일정 종료 기준 한 달 전, 3주 전, 1주 전, 하루 전에 알립니다. 앱이 켜져 있는 동안 1분마다, PC를 켜거나 절전에서 깨어나면 바로 확인합니다. 꺼져 있어 놓친 알림은 가장 가까운 단계 한 건만 보내고, 끝내지 않은 할 일의 마감이 그사이 지났다면 3일 안에 "마감 지남"을 한 번 알립니다. 반복 일정은 마감 알림 대신 아침 브리핑에서 알려 드려요.', desktopEnabled: desktopToastEnabled() };
   }
-  async updateSettings(userId: string, data: { notificationInApp: boolean; notificationEmail: boolean }) {
+  async updateSettings(userId: string, data: { notificationInApp: boolean; notificationEmail: boolean; briefingEnabled?: boolean; briefingHour?: number }) {
     await this.db.user.update({ where: { id: userId }, data });
     return this.settings(userId);
   }

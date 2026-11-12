@@ -1,6 +1,7 @@
 import { BadGatewayException, BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MAX_LIST, MAX_READ, isAllowedPath } from './project-files';
+import type { Commit } from './devlog.logic';
 type Row = { sha?: string; number?: number; title?: string; state?: string; html_url: string; updated_at?: string; pull_request?: unknown; commit?: { message: string; author?: { date?: string } } };
 @Injectable()
 export class GithubService {
@@ -43,6 +44,16 @@ export class GithubService {
     if (res.status === 404) throw new NotFoundException('저장소나 파일을 찾을 수 없거나 접근 권한이 없습니다. 비공개 저장소는 GITHUB_TOKEN이 필요합니다.');
     if (!res.ok) throw new BadGatewayException('GitHub 권한 또는 호출 한도를 확인하세요.');
     return res;
+  }
+
+  /** 기본 브랜치에서 [since, until) 사이 커밋 (개발일지용, 최대 100개). 파일 목록은 PC 폴더 쪽에서 채운다 */
+  async commits(repository: string, since: Date, until: Date): Promise<Commit[]> {
+    const res = await this.get(`${this.base(repository)}/commits?since=${encodeURIComponent(since.toISOString())}&until=${encodeURIComponent(until.toISOString())}&per_page=100`);
+    const rows = await res.json() as { sha: string; html_url: string; commit: { message: string; author?: { name?: string; date?: string } } }[];
+    return rows.map(r => {
+      const [title = '', ...rest] = r.commit.message.split('\n');
+      return { sha: r.sha, title: title.slice(0, 300), body: rest.join('\n').trim().slice(0, 1000), date: r.commit.author?.date ?? '', author: r.commit.author?.name ?? '', files: [], source: 'github' as const, url: r.html_url };
+    });
   }
 
   /** 기본 브랜치의 전체 파일 목록 (읽기 전용). */

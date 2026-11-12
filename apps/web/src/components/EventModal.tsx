@@ -2,7 +2,7 @@ import { Trash2 } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { api, errorMessage } from '../lib/api';
 import { addDays, startOfDay, toDateInput, toLocalInput } from '../lib/date';
-import { CATEGORIES, CATEGORY_COLOR, CATEGORY_LABEL, type CalendarEvent, type Category } from '../lib/types';
+import { CATEGORIES, CATEGORY_COLOR, CATEGORY_LABEL, REPEATS, REPEAT_LABEL, type CalendarEvent, type Category, type Repeat } from '../lib/types';
 import { Button, Field, Input, Modal, Select, Textarea } from './ui';
 
 /** 일정 생성/수정/삭제 모달. event 가 있으면 수정 모드 */
@@ -26,6 +26,8 @@ export default function EventModal({
   const [location, setLocation] = useState('');
   const [category, setCategory] = useState<Category>('GENERAL');
   const [description, setDescription] = useState('');
+  const [repeat, setRepeat] = useState<Repeat | ''>('');
+  const [until, setUntil] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -43,6 +45,8 @@ export default function EventModal({
       setLocation(event.location ?? '');
       setCategory(event.category);
       setDescription(event.description ?? '');
+      setRepeat(event.repeat ?? '');
+      setUntil(event.repeatUntil ? toDateInput(new Date(event.repeatUntil)) : '');
     } else {
       const base = defaultDate ?? new Date();
       const s = new Date(base.getFullYear(), base.getMonth(), base.getDate(), Math.min(new Date().getHours() + 1, 23));
@@ -53,6 +57,8 @@ export default function EventModal({
       setLocation('');
       setCategory('GENERAL');
       setDescription('');
+      setRepeat('');
+      setUntil('');
     }
     setError(null);
     setConfirmDelete(false);
@@ -71,12 +77,23 @@ export default function EventModal({
     const endAt = allDay ? addDays(startOfDay(new Date(`${end}T00:00`)), 1) : new Date(end);
     if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) return setError('시간을 입력해주세요.');
     if (endAt < startAt) return setError('종료 시간은 시작 시간보다 뒤여야 합니다.');
+    // 반복 끝: 고른 날의 마지막 순간까지 (그날 회차 포함)
+    const repeatUntil = repeat && until ? new Date(`${until}T23:59:59.999`) : null;
+
+    // 반복 일정의 한 회차를 고쳤으면, 바뀐 만큼 원래(첫 회차) 일정을 옮긴다 → 반복 전체에 적용
+    const series = event?.series;
+    const shift = (value: Date, occurrence: string, original: string) => new Date(new Date(original).getTime() + value.getTime() - new Date(occurrence).getTime());
+    const seriesStart = series ? shift(startAt, event!.startAt, series.startAt) : startAt;
+    const seriesEnd = series ? shift(endAt, event!.endAt, series.endAt) : endAt;
+    if (repeatUntil && repeatUntil < seriesStart) return setError('반복 끝은 첫 일정보다 뒤여야 합니다.');
 
     const body = {
       title,
       allDay,
-      startAt: startAt.toISOString(),
-      endAt: endAt.toISOString(),
+      startAt: seriesStart.toISOString(),
+      endAt: seriesEnd.toISOString(),
+      repeat: repeat || (event ? null : undefined),
+      repeatUntil: repeatUntil ? repeatUntil.toISOString() : event ? null : undefined,
       location: location.trim() ? location : event ? null : undefined,
       description: description.trim() ? description : event ? null : undefined,
       category,
@@ -138,6 +155,24 @@ export default function EventModal({
           </Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
+          <Field label="반복">
+            <Select value={repeat} onChange={(e) => setRepeat(e.target.value as Repeat | '')}>
+              <option value="">안 함</option>
+              {REPEATS.map((r) => (
+                <option key={r} value={r}>
+                  {REPEAT_LABEL[r]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          {repeat && (
+            <Field label="반복 끝 (선택)">
+              <Input type="date" value={until} min={start.slice(0, 10)} onChange={(e) => setUntil(e.target.value)} />
+            </Field>
+          )}
+        </div>
+        {event?.series && <p className="text-xs text-muted">반복 일정이에요. 고치거나 지우면 반복 전체에 적용돼요.</p>}
+        <div className="grid grid-cols-2 gap-3">
           <Field label="카테고리">
             <Select value={category} onChange={(e) => setCategory(e.target.value as Category)}>
               {CATEGORIES.map((c) => (
@@ -161,7 +196,7 @@ export default function EventModal({
           {event && !readOnly ? (
             confirmDelete ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted">삭제할까요?</span>
+                <span className="text-xs text-muted">{event.series ? '반복 전체를 삭제할까요?' : '삭제할까요?'}</span>
                 <Button type="button" variant="danger" onClick={onDelete} loading={saving}>
                   삭제
                 </Button>

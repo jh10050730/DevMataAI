@@ -21,6 +21,7 @@ import { DemoModule } from './demo/demo.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { BackupModule } from './backup/backup.module';
 import { DesktopModule } from './desktop/desktop.module';
+import { BriefingModule } from './briefing/briefing.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { DesktopModule } from './desktop/desktop.module';
     DemoModule,
     BackupModule,
     DesktopModule,
+    BriefingModule,
   ],
   controllers: [HealthController],
   // 모든 API는 기본적으로 로그인 필요. 예외는 @Public()

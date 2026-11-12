@@ -14,6 +14,7 @@ import ProjectsPage from './pages/ProjectsPage';
 import PasswordResetPage from './pages/PasswordResetPage';
 import HelpPage from './pages/HelpPage';
 import FindAccountPage from './pages/FindAccountPage';
+import QuickCapturePage from './pages/QuickCapturePage';
 import ClaudeSetup, { ClaudeOnboardingGate } from './components/ClaudeSetup';
 import ConnectionBanner from './components/ConnectionBanner';
 
@@ -41,6 +42,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/forgot-password" element={<PasswordResetPage key="request" mode="request" />} />
       <Route path="/find-account" element={<FindAccountPage />} />
+      {/* 데스크톱 앱의 빠른 입력 창 (로그인은 창이 열릴 때 넘겨받는다) */}
+      <Route path="/quick" element={<QuickCapturePage />} />
       <Route path="/reset-password" element={<PasswordResetPage key="reset" mode="reset" />} />
       <Route path="/claude-setup" element={<RequireAuth><ClaudeSetup /></RequireAuth>} />
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <AuthPage mode="login" />} />

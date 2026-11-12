@@ -101,7 +101,7 @@ export default function DashboardPage() {
               ) : (
                 <ul className="divide-y divide-border">
                   {data.todayEvents.map((e) => (
-                    <EventRow key={e.id} e={e} />
+                    <EventRow key={`${e.id}:${e.startAt}`} e={e} />
                   ))}
                 </ul>
               )}
@@ -180,7 +180,7 @@ export default function DashboardPage() {
               ) : (
                 <ul className="divide-y divide-border">
                   {data.upcomingEvents.map((e) => (
-                    <li key={e.id} className="flex items-center justify-between gap-2 py-2 text-sm">
+                    <li key={`${e.id}:${e.startAt}`} className="flex items-center justify-between gap-2 py-2 text-sm">
                       <span className="truncate">{e.title}</span>
                       <span className="shrink-0 text-xs text-muted">
                         {fmtDate(e.startAt)} {!e.allDay && fmtTime(e.startAt)}

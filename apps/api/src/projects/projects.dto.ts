@@ -29,3 +29,7 @@ export class FileQueryDto {
   @IsIn(['local', 'github']) source!: string;
   @ValidateIf(optional) @IsString() @MinLength(1) @MaxLength(500) path?: string;
 }
+export class DevLogDto {
+  /** YYYY-MM-DD (한국 시간). 없으면 오늘 */
+  @ValidateIf(optional) @IsString() @Matches(/^\d{4}-\d{2}-\d{2}$/) day?: string;
+}

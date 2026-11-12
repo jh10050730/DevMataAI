@@ -1,9 +1,12 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
-import { IsBoolean } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { NotificationsService } from './notifications.service';
 class NotificationSettingsDto {
   @IsBoolean() notificationInApp: boolean;
   @IsBoolean() notificationEmail: boolean;
+  /** 아침 브리핑 켜기·시각(한국 시간 0~17시) */
+  @IsOptional() @IsBoolean() briefingEnabled?: boolean;
+  @IsOptional() @IsInt() @Min(0) @Max(17) briefingHour?: number;
 }
 type AuthRequest = { user: { id: string } };
 @Controller('notifications')

@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { AuthUser, CurrentUser } from '../common/current-user.decorator';
 import { AssistantService } from './assistant.service';
-import { ActionDto, ChatDto, SearchDto } from './assistant.dto';
+import { ActionDto, ChatDto, QuickDto, SearchDto } from './assistant.dto';
 @Controller('assistant')
 export class AssistantController {
   constructor(private readonly assistant: AssistantService) {}
@@ -10,6 +10,7 @@ export class AssistantController {
   @Get('recommendations/:projectId') recommendations(@CurrentUser() u: AuthUser, @Param('projectId') id: string) { return this.assistant.recommendations(u.id, id); }
   @Get('messages') messages(@CurrentUser() u: AuthUser) { return this.assistant.messages(u.id); }
   @Delete('messages') clear(@CurrentUser() u: AuthUser) { return this.assistant.clearMessages(u.id); }
+  @Post('quick') quick(@CurrentUser() u: AuthUser, @Body() dto: QuickDto) { return this.assistant.quick(u.id, dto.text); }
   @Post('chat') chat(@CurrentUser() u: AuthUser, @Body() dto: ChatDto) { return this.assistant.chat(u.id, dto); }
   @Post('actions') propose(@CurrentUser() u: AuthUser, @Body() dto: ActionDto) { return this.assistant.propose(u.id, dto); }
   @Post('actions/:id/confirm') confirm(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.assistant.confirm(u.id, id); }

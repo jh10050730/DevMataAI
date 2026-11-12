@@ -1,6 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsDate, IsHexColor, IsIn, IsOptional, IsString, MaxLength, MinLength, ValidateIf } from 'class-validator';
 import { CATEGORIES } from '../common/constants';
+import { REPEATS } from '../common/recurrence';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
@@ -28,6 +29,14 @@ export class CreateEventDto {
 
   @IsOptional() @IsIn(CATEGORIES)
   category?: string;
+
+  /** 반복 (한국 시간 달력 기준). 없으면 한 번만 */
+  @IsOptional() @IsIn(REPEATS)
+  repeat?: string;
+
+  /** 반복 끝: 이 시각 뒤에 시작하는 회차는 없음 */
+  @IsOptional() @Type(() => Date) @IsDate()
+  repeatUntil?: Date;
 }
 
 export class UpdateEventDto {
@@ -54,6 +63,14 @@ export class UpdateEventDto {
 
   @IsOptional() @IsIn(CATEGORIES)
   category?: string;
+
+  /** null 이면 반복 끄기 */
+  @IsOptional() @ValidateIf((_, v) => v !== null) @IsIn(REPEATS)
+  repeat?: string | null;
+
+  /** null 이면 끝 없이 반복 */
+  @IsOptional() @ValidateIf((_, v) => v !== null) @Type(() => Date) @IsDate()
+  repeatUntil?: Date | null;
 }
 
 export class EventRangeDto {

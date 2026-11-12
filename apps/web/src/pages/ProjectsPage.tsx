@@ -5,6 +5,7 @@ import { onDataChanged } from '../lib/dataEvents';
 import { Badge, Button, Card, EmptyState, ErrorState, Field, Input, Modal, ProgressBar, Select, Spinner, Textarea } from '../components/ui';
 import Markdown from '../components/Markdown';
 import ProjectFilesCard, { type FilesProject } from '../components/ProjectFilesCard';
+import DevLogCard from '../components/DevLogCard';
 
 type Item = { id: string; title: string; kind: string; status: string; notes: string };
 type Project = FilesProject & { name: string; goal: string; description: string; status: string; items: Item[]; progress: { total: number; done: number; rate: number } };
@@ -97,6 +98,7 @@ export default function ProjectsPage() {
           <p className="text-xs text-muted">공개 저장소는 토큰 없이 조회할 수 있습니다. 비공개 저장소는 서버의 GITHUB_TOKEN 권한이 필요합니다.</p>
           {activity ? <><p className="my-3 text-xs text-muted">{activity.message}</p><div className="grid gap-4 @3xl:grid-cols-3">{activity.sections.map(section => <div key={section.kind}><h3 className="mb-2 text-sm font-semibold">{{ commits: '커밋', issues: '이슈', pulls: 'PR' }[section.kind]} ({section.items.length})</h3>{!section.ok && <p className="text-xs text-red-500">{section.message}</p>}{section.truncated && <p className="text-xs text-amber-500">조회 상한 100개에 도달해 일부 활동이 생략될 수 있습니다.</p>}<ul className="max-h-72 space-y-2 overflow-y-auto">{section.items.map(item => <li key={item.id} className="text-xs"><a href={item.url} target="_blank" rel="noopener noreferrer" className="text-accent">{item.title.split('\n')[0]} ↗</a><p className="text-muted">{item.state} {item.date && new Date(item.date).toLocaleDateString('ko-KR')}</p></li>)}</ul>{section.ok && !section.items.length && <p className="text-xs text-muted">이 기간에 조회된 활동이 없습니다.</p>}</div>)}</div></> : <p className="mt-3 text-sm text-muted">{project.repository ? '활동 조회 버튼으로 저장소 소식을 가져오세요.' : '프로젝트 수정에서 owner/repository를 등록하세요.'}</p>}
         </Card>
+        <DevLogCard key={project.id} projectId={project.id} hasSource={!!(project.localPath || project.repository)} />
         <Card title="AI 주간 보고서" action={<Button loading={busy} onClick={() => void run(async () => { const report = await api.post<Report>(`/projects/${selected}/reports`); setReports(rows => [report, ...rows].slice(0, 20)); })}>보고서 생성</Button>}>
           <p className="mb-4 text-xs text-muted">최근 7일 완료한 작업, 현재 진행·문제, GitHub 활동을 기반으로 다음 작업을 제안합니다. 보고서는 생성 당시 기록으로 저장됩니다.</p>
           {!reports.length ? <EmptyState title="저장된 보고서가 없습니다" /> : reports.map((report, i) => <details key={report.id} open={i === 0} className="mb-3 rounded-xl border border-border p-4"><summary className="cursor-pointer text-sm">{new Date(report.createdAt).toLocaleString('ko-KR')} · {report.demo ? 'DEMO · 실제 AI 분석 아님' : report.provider}</summary><Markdown className="mt-4" source={report.content} /></details>)}

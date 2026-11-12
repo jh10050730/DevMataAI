@@ -7,7 +7,7 @@ import TaskModal from '../components/TaskModal';
 import { Button, Card, DemoBadge, EmptyState, ErrorState, Input, ProgressBar, Select, Skeleton, cn } from '../components/ui';
 import { api, errorMessage } from '../lib/api';
 import { addDays, addMonths, fmtDate, fmtTime, isSameDay, monthGrid, overlapsDay, startOfDay, weekDays } from '../lib/date';
-import { CATEGORIES, CATEGORY_COLOR, CATEGORY_LABEL, type CalendarEvent, type Category, type Task, type TaskStats } from '../lib/types';
+import { CATEGORIES, CATEGORY_COLOR, CATEGORY_LABEL, REPEAT_LABEL, type CalendarEvent, type Category, type Task, type TaskStats } from '../lib/types';
 import { useAsync } from '../lib/useAsync';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -118,7 +118,7 @@ export default function CalendarTasksPage() {
                       </span>
                       {dayEvents.slice(0, max).map((e) => (
                         <span
-                          key={e.id}
+                          key={`${e.id}:${e.startAt}`}
                           className="hidden truncate rounded px-1 py-0.5 text-[11px] @xl:block"
                           style={{ background: `${e.color ?? CATEGORY_COLOR[e.category]}22`, color: e.color ?? CATEGORY_COLOR[e.category] }}
                         >
@@ -154,7 +154,7 @@ export default function CalendarTasksPage() {
           ) : (
             <ul className="space-y-2">
               {selectedEvents.map((e) => (
-                <li key={e.id}>
+                <li key={`${e.id}:${e.startAt}`}>
                   <button
                     onClick={() => setEventModal({ open: true, event: e })}
                     className="flex w-full items-start gap-3 rounded-lg border border-border p-3 text-left hover:border-accent/50"
@@ -164,6 +164,7 @@ export default function CalendarTasksPage() {
                       <span className="block truncate text-sm font-medium">{e.title}</span>
                       <span className="block text-xs text-muted">
                         {e.allDay ? '종일' : `${fmtTime(e.startAt)} – ${fmtTime(e.endAt)}`}
+                        {e.repeat && ` · ${REPEAT_LABEL[e.repeat]} 반복`}
                         {e.location && (
                           <span className="ml-2 inline-flex items-center gap-0.5">
                             <MapPin className="size-3" />

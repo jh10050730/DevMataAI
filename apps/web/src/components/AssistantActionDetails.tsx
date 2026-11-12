@@ -1,5 +1,5 @@
-const fields: Record<string, string> = { title: '제목', name: '이름', goal: '목표', description: '설명', status: '상태', kind: '종류', notes: '메모', startAt: '시작', endAt: '종료', allDay: '종일 일정', location: '장소', priority: '우선순위', category: '분류', dueDate: '마감', completed: '완료', content: '본문', appendContent: '본문에 덧붙일 내용', tags: '태그' };
-const values: Record<string, string> = { ACTIVE: '진행 중', PAUSED: '일시 중지', COMPLETED: '완료', TODO: '예정', IN_PROGRESS: '진행 중', BLOCKED: '문제 있음', DONE: '완료', TASK: '작업', FEATURE: '기능', LOW: '낮음', MEDIUM: '보통', HIGH: '높음', URGENT: '긴급', GENERAL: '일반', STUDY: '학습', DEV: '개발', SCHOOL: '학교', PERSONAL: '개인', true: '예', false: '아니오' };
+const fields: Record<string, string> = { title: '제목', name: '이름', goal: '목표', description: '설명', status: '상태', kind: '종류', notes: '메모', startAt: '시작', endAt: '종료', allDay: '종일 일정', location: '장소', priority: '우선순위', category: '분류', dueDate: '마감', completed: '완료', content: '본문', appendContent: '본문에 덧붙일 내용', tags: '태그', repeat: '반복' };
+const values: Record<string, string> = { ACTIVE: '진행 중', PAUSED: '일시 중지', COMPLETED: '완료', TODO: '예정', IN_PROGRESS: '진행 중', BLOCKED: '문제 있음', DONE: '완료', TASK: '작업', FEATURE: '기능', LOW: '낮음', MEDIUM: '보통', HIGH: '높음', URGENT: '긴급', GENERAL: '일반', STUDY: '학습', DEV: '개발', SCHOOL: '학교', PERSONAL: '개인', DAILY: '매일', WEEKDAYS: '평일마다', WEEKLY: '매주', MONTHLY: '매월', true: '예', false: '아니오' };
 const DATE_KEYS = ['startAt', 'endAt', 'dueDate'];
 const LONG_KEYS = ['content', 'appendContent', 'description'];
 const date = (value: string, dateOnly = false) => {

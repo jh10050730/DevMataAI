@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { CATEGORIES, PRIORITY_WEIGHT } from '../common/constants';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto, TaskQueryDto, UpdateTaskDto } from './tasks.dto';
+import { assertRepeatable, spawnNextTask } from './task-repeat';
 
 type Sortable = { completed: boolean; dueDate: Date | null; priority: string; createdAt: Date };
 
@@ -31,16 +32,24 @@ export class TasksService {
   }
 
   create(userId: string, dto: CreateTaskDto) {
+    assertRepeatable(dto.repeat, dto.dueDate);
     return this.prisma.task.create({ data: { ...dto, userId } });
   }
 
+  /** 반복 할 일을 끝내면 다음 마감일로 새 할 일을 만든다 (next 로 돌려준다) */
   async update(userId: string, id: string, dto: UpdateTaskDto) {
     const existing = await this.findOwned(userId, id);
+    assertRepeatable(dto.repeat === undefined ? existing.repeat : dto.repeat, dto.dueDate === undefined ? existing.dueDate : dto.dueDate);
     const data: Prisma.TaskUpdateInput = { ...dto };
+    const completing = dto.completed === true && !existing.completed;
     if (dto.completed !== undefined && dto.completed !== existing.completed) {
       data.completedAt = dto.completed ? new Date() : null;
     }
-    return this.prisma.task.update({ where: { id }, data });
+    return this.prisma.$transaction(async tx => {
+      const task = await tx.task.update({ where: { id }, data });
+      const next = completing ? await spawnNextTask(tx, task) : null;
+      return next ? { ...task, next } : task;
+    });
   }
 
   async remove(userId: string, id: string) {

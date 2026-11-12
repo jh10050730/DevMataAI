@@ -1,6 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsDate, IsIn, IsOptional, IsString, MaxLength, MinLength, ValidateIf } from 'class-validator';
 import { CATEGORIES, TASK_PRIORITIES } from '../common/constants';
+import { REPEATS } from '../common/recurrence';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
@@ -22,6 +23,10 @@ export class CreateTaskDto {
 
   @IsOptional() @Type(() => Date) @IsDate({ message: '마감일 형식이 올바르지 않습니다.' })
   dueDate?: Date;
+
+  /** 반복 (마감일 필요). 없으면 한 번만 */
+  @IsOptional() @IsIn(REPEATS)
+  repeat?: string;
 }
 
 export class UpdateTaskDto {
@@ -43,6 +48,10 @@ export class UpdateTaskDto {
 
   @IsOptional() @IsBoolean()
   completed?: boolean;
+
+  /** null 이면 반복 끄기 */
+  @IsOptional() @ValidateIf((_, v) => v !== null) @IsIn(REPEATS)
+  repeat?: string | null;
 }
 
 export class TaskQueryDto {

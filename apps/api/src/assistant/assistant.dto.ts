@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsISO8601, IsString, MaxLength, MinLength, ValidateIf, ValidateNested } from 'class-validator';
 import { CATEGORIES, TASK_PRIORITIES } from '../common/constants';
+import { REPEATS } from '../common/recurrence';
 const optional = (_: unknown, value: unknown) => value !== undefined;
 class ChatMessage {
   @IsIn(['user', 'assistant']) role!: 'user' | 'assistant';
@@ -15,6 +16,8 @@ export class ChatDto {
   @ValidateIf(optional) @IsString() @MaxLength(300) page?: string;
 }
 export class SearchDto { @IsString() @MinLength(1) @MaxLength(100) q!: string; }
+/** 빠른 입력 (단축키 창): 한 줄을 할 일·일정·메모 제안으로 바꾼다 */
+export class QuickDto { @IsString() @MinLength(1) @MaxLength(500) text!: string; }
 export const ACTION_KINDS = ['task_create', 'task_update', 'task_complete', 'task_rename', 'task_delete', 'event_create', 'event_update', 'event_delete', 'note_create', 'note_update', 'note_delete', 'project_create', 'project_update', 'project_delete', 'item_create', 'item_update', 'item_delete'] as const;
 export const PROJECT_STATUSES = ['ACTIVE', 'PAUSED', 'COMPLETED'];
 export const ITEM_STATUSES = ['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE'];
@@ -41,6 +44,8 @@ export class ActionDto {
   @ValidateIf(optional) @IsIn(CATEGORIES) category?: string;
   @ValidateIf(optional) @IsString() @MaxLength(50) dueDate?: string;
   @ValidateIf(optional) @IsBoolean() completed?: boolean;
+  // 할 일·일정 반복 (할 일은 마감일 필요)
+  @ValidateIf(optional) @IsIn(REPEATS) repeat?: string;
   // 학습 노트 추가·수정. content 는 본문 전체 교체, appendContent 는 본문 끝에 덧붙이기
   @ValidateIf(optional) @IsString() @MaxLength(50000) content?: string;
   @ValidateIf(optional) @IsString() @MaxLength(20000) appendContent?: string;

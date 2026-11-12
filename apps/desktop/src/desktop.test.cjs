@@ -187,3 +187,12 @@ test('reload shortcut is Ctrl+R or F5 on key down only', () => {
   assert.equal(isReloadKey({ type: 'keyDown', key: 'r', control: true, shift: true }), false);
   assert.equal(isReloadKey(null), false);
 });
+
+test('빠른 입력: 단축키 후보와 트레이 표시 이름', () => {
+  const { QUICK_SHORTCUTS, QUICK_TOKEN_SCRIPT, shortcutLabel } = require('./quick.cjs');
+  assert.equal(QUICK_SHORTCUTS[0], 'CommandOrControl+Shift+Space');
+  assert.equal(shortcutLabel('CommandOrControl+Shift+Space'), 'Ctrl+Shift+Space');
+  // 앱 창 로그인은 두 저장소 중 한 곳에서만 읽는다 (그 밖의 값은 건드리지 않는다)
+  assert.match(QUICK_TOKEN_SCRIPT, /devmata-session-token/);
+  assert.match(QUICK_TOKEN_SCRIPT, /devmata-remembered-token/);
+});

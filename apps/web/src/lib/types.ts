@@ -17,6 +17,8 @@ export interface Task {
   dueDate: string | null;
   completed: boolean;
   completedAt: string | null;
+  /** 반복 (완료하면 다음 마감일로 새 할 일이 생긴다) */
+  repeat?: Repeat | null;
   isDemo?: boolean;
   createdAt: string;
 }
@@ -32,6 +34,10 @@ export interface CalendarEvent {
   color: string | null;
   category: Category;
   source: string;
+  repeat?: Repeat | null;
+  repeatUntil?: string | null;
+  /** 반복 일정의 회차일 때: 원래(첫 회차) 시작·종료. 수정은 반복 전체에 적용된다 */
+  series?: { startAt: string; endAt: string };
   isDemo?: boolean;
 }
 
@@ -72,3 +78,7 @@ export const CATEGORY_COLOR: Record<Category, string> = {
 };
 export const PRIORITIES = Object.keys(PRIORITY_LABEL) as Priority[];
 export const CATEGORIES = Object.keys(CATEGORY_LABEL) as Category[];
+
+export type Repeat = 'DAILY' | 'WEEKDAYS' | 'WEEKLY' | 'MONTHLY';
+export const REPEAT_LABEL: Record<Repeat, string> = { DAILY: '매일', WEEKDAYS: '평일마다', WEEKLY: '매주', MONTHLY: '매월' };
+export const REPEATS = Object.keys(REPEAT_LABEL) as Repeat[];

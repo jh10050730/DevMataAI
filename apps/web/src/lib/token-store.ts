@@ -20,6 +20,8 @@ export function createTokenStore(local: StorageAccess, session: StorageAccess, n
       return mode === 'session' ? read(session, SESSION_TOKEN_KEY) : mode === 'persistent' ? read(local, PERSISTENT_TOKEN_KEY) : null;
     },
     isPersistent() { return mode === 'persistent'; },
+    /** 이 화면에서만 쓸 로그인 (저장소는 건드리지 않는다). 데스크톱 빠른 입력 창이 앱 창의 로그인을 넘겨받을 때 */
+    adopt(token: string) { memoryFallback = token; },
     set(token: string, remember = false) {
       remove(local, PERSISTENT_TOKEN_KEY); remove(session, SESSION_TOKEN_KEY); remove(local, LEGACY_TOKEN_KEY);
       mode = remember ? 'persistent' : 'session'; memoryFallback = null;

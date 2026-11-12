@@ -1,8 +1,9 @@
 // DevMata AI 데스크톱 앱: API 서버를 띄우고 앱 창에 화면을 연다. 창을 닫으면 트레이로 숨고, 트레이 메뉴에서 종료한다.
-const { app, BrowserWindow, Menu, Notification, Tray, dialog, nativeImage, powerMonitor, shell } = require('electron');
+const { app, BrowserWindow, Menu, Notification, Tray, dialog, globalShortcut, nativeImage, powerMonitor, screen, shell } = require('electron');
 const { join } = require('node:path');
 const { claimAutoStartDefault, loadConfig } = require('./config.cjs');
 const { appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, isFocusRequest, isReloadKey, resetRoute, updateAction } = require('./paths.cjs');
+const { QUICK_SHORTCUTS, QUICK_TOKEN_SCRIPT, shortcutLabel } = require('./quick.cjs');
 const { startApi } = require('./server.cjs');
 const { trayIcon, windowIcon } = require('./icon.cjs');
 const { createUpdater, readyToNotify } = require('./updater.cjs');
@@ -70,7 +71,52 @@ async function start() {
   powerMonitor.on('unlock-screen', wake);
   app.devmataUrl = `http://localhost:${config.port}/`;
   app.devmataPort = config.port;
+  registerQuickShortcut();
   if (win) await win.loadURL(app.devmataUrl);
+}
+
+// 빠른 입력: 어디서든 단축키로 작은 창을 열어 한 줄로 할 일·일정을 넣는다.
+// 기본 단축키가 다른 프로그램에 잡혀 있으면 다음 후보를 쓴다.
+let quickWin = null;
+let quickShortcut = null;
+function registerQuickShortcut() {
+  for (const accelerator of QUICK_SHORTCUTS) {
+    try { if (globalShortcut.register(accelerator, openQuick)) { quickShortcut = accelerator; break; } } catch { /* 다음 후보 */ }
+  }
+  refreshTray();
+}
+
+async function openQuick() {
+  if (!app.devmataUrl) return;
+  if (!quickWin) {
+    const { workArea } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+    const width = 600, height = 380;
+    quickWin = new BrowserWindow({
+      width, height, x: Math.round(workArea.x + (workArea.width - width) / 2), y: Math.round(workArea.y + workArea.height * 0.2),
+      frame: false, resizable: false, maximizable: false, minimizable: false, skipTaskbar: true, alwaysOnTop: true, show: false,
+      title: `${APP_NAME} 빠른 입력`, icon: windowIcon(), backgroundColor: '#ffffff',
+      webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
+    });
+    quickWin.webContents.setWindowOpenHandler(({ url }) => { if (isExternalUrl(url)) void shell.openExternal(url); return { action: 'deny' }; });
+    quickWin.webContents.on('will-navigate', (event, url) => { if (!isAppUrl(url, app.devmataPort)) event.preventDefault(); });
+    // 닫기(Esc·추가 완료)·다른 곳 클릭은 숨기기만 한다. 앱 창이 새 내용을 다시 불러오게 알린다
+    quickWin.on('close', event => { if (!quitting) { event.preventDefault(); hideQuick(); } });
+    quickWin.on('blur', () => hideQuick());
+    quickWin.on('closed', () => { quickWin = null; });
+    await quickWin.loadURL(new URL('quick', app.devmataUrl).toString());
+  }
+  // 앱 창의 로그인을 넘겨준다 (로그인 유지를 고르지 않았으면 그 창에만 있어서)
+  let token = '';
+  try { token = win ? String(await win.webContents.executeJavaScript(QUICK_TOKEN_SCRIPT, true) || '') : ''; } catch { token = ''; }
+  await quickWin.webContents.executeJavaScript(`window.dispatchEvent(new CustomEvent('devmata:quick-open', { detail: { token: ${JSON.stringify(token)} } }))`, true).catch(() => {});
+  quickWin.show();
+  quickWin.focus();
+}
+
+function hideQuick() {
+  if (!quickWin?.isVisible()) return;
+  quickWin.hide();
+  if (win) void win.webContents.executeJavaScript("window.dispatchEvent(new Event('devmata:data-changed'))", true).catch(() => {});
 }
 
 function createWindow(firstUrl) {
@@ -179,6 +225,7 @@ function createTray() {
   tray.on('click', showWindow);
   const refresh = () => tray.setContextMenu(Menu.buildFromTemplate([
     { label: `${APP_NAME} 열기`, click: showWindow },
+    { label: quickShortcut ? `빠른 입력 (${shortcutLabel(quickShortcut)})` : '빠른 입력', enabled: !!app.devmataUrl, click: () => void openQuick() },
     { type: 'separator' },
     {
       label: 'Windows 시작 시 자동 실행', type: 'checkbox', checked: app.getLoginItemSettings().openAtLogin,
@@ -204,4 +251,4 @@ function loadingPage() {
 // 창을 모두 닫아도 트레이에 남아 알림·뉴스 수집을 계속한다.
 app.on('window-all-closed', () => {});
 app.on('before-quit', () => { quitting = true; });
-app.on('will-quit', () => { api?.kill(); });
+app.on('will-quit', () => { globalShortcut.unregisterAll(); api?.kill(); });

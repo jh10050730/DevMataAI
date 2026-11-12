@@ -1,7 +1,7 @@
-import { Check, Pencil, Trash2 } from 'lucide-react';
+import { Check, Pencil, Repeat, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { dueLabel } from '../lib/date';
-import { CATEGORY_COLOR, CATEGORY_LABEL, PRIORITY_LABEL, PRIORITY_STYLE, type Task } from '../lib/types';
+import { CATEGORY_COLOR, CATEGORY_LABEL, PRIORITY_LABEL, PRIORITY_STYLE, REPEAT_LABEL, type Task } from '../lib/types';
 import { Badge, DemoBadge, cn } from './ui';
 
 const DUE_TONE = {
@@ -47,6 +47,7 @@ export default function TaskItem({
             {CATEGORY_LABEL[task.category]}
           </span>
           {due && <span className={cn('text-[11px] font-medium', DUE_TONE[due.tone])}>· {due.text}</span>}
+          {task.repeat && <span className="inline-flex items-center gap-0.5 text-[11px] text-muted" title="끝내면 다음 할 일이 생겨요"><Repeat className="size-3" />{REPEAT_LABEL[task.repeat]}</span>}
         </div>
       </div>
       {(onEdit || onDelete) && (
