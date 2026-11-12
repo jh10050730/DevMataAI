@@ -1,5 +1,13 @@
 # 다음 작업을 위한 인수인계
 
+## 2026-11-12 남은 작업 점검·설치본 재생성 (최신)
+
+- 현재 전체 코드 검증 완료: API 36개 스위트/271개 테스트, 웹 11개 파일/50개 테스트, 운영·데스크톱 31개 테스트, API·웹 타입 검사 통과. 대화 저장·화면 패널·일정/할 일/노트 변경·AI 대기열 등 이전 별도 작업도 포함한 현재 작업 트리 기준. 최근 커밋 cea1925와 4bd69b5의 GitHub CI 성공 확인.
+- `npm run desktop:dist` 성공. 초기화 대상 stage가 `%LOCALAPPDATA%/DevMataAI-build/stage` 내부임을 검증한 뒤 실행. 최신 설치 파일 `%LOCALAPPDATA%/DevMataAI-build/release/DevMata-AI-Setup-0.1.0.exe` 생성, 런타임 패키지 158개·Google 앱 기본값 포함. 기존 사용자 데이터/AI 인증 파일은 포함하지 않음. 공개 업로드하지 않음.
+- win-unpacked의 실제 `DevMata AI.exe`를 ELECTRON_RUN_AS_NODE=1로 실행해 포함된 API를 별도 임시 DB/포트에서 검사. API 바이너리 소스와 웹 index가 현재 빌드와 동일한지 SHA-256 비교, health=ok, Antigravity 안내 최신 웹 제공, /api/ai/gemini 비로그인 401, Google 본인 확인 설정 포함, AssistantMessage 마이그레이션 자동 적용, DB integrity_check=ok/사용자 0명 확인. 검사용 서버 종료. NSIS 설치 마법사·Windows 시작 시 자동 실행을 실제로 검수했다는 뜻은 아님.
+- README의 설치 사용자 안내를 완료하고 기존 개발 실행 자료를 하단에 분리. 계획의 5·6단계/C1/X1/U5 상태 갱신. GitHub의 Google Secret 두 개는 이미 등록되어 있어 이름만 확인했으며 값은 출력하지 않음. GitHub Releases는 아직 없음.
+- 남음: NSIS 실제 설치·트레이/자동 실행·제거 후 데이터 유지 확인, 다음 배포 버전 결정과 갱신, GitHub Releases 게시와 자동 업데이트 실기동. 앱 기능의 실계정 Google Calendar/Notion/GitHub 연동 검수 및 2개 Google 계정으로 Antigravity keyring 분리 검수는 별도. 서명 인증서·Google 공개 검수는 선택/배포 범위에 따라 진행.
+
 ## 2026-11-11 Antigravity 전환 및 실제 응답 성공 (최신)
 
 - 사용자 요청으로 Google 공식 설치 스크립트를 검토하고 Antigravity CLI 1.5.5를 `%LOCALAPPDATA%/agy/bin/agy.exe`에 설치. 프로젝트 의존성/lock 변경 없음. GeminiService가 ANTIGRAVITY_CLI_PATH(구 GEMINI_CLI_PATH 입력 호환) 또는 위 경로의 네이티브 실행 파일을 사용. JS/셸 래퍼 거부. 관리자 ai.geminiPath는 ANTIGRAVITY_CLI_PATH로 연결.

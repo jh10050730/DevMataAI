@@ -21,8 +21,8 @@ Node.js·MySQL·`.env` 편집 없이 동작해야 한다.
 | 2 | **설정을 앱 안으로**: `.env` 대신 앱 설정 화면에서 Google·Notion·GitHub·SMTP·AI 모델 입력. 비밀값은 암호화 저장, 읽기 API는 "설정됨" 여부만 반환. `.env` 값이 있으면 기본값으로 사용 | Codex | 1단계의 `AppSetting` 커밋 | 구현 완료 · 관리자 API/화면/동적 설정, 全 테스트 168개 통과 · Electron 화면 검수는 3단계 후 |
 | 3 | **Electron 데스크톱 앱**: `apps/desktop` 패키지, 창·트레이·Windows 로그인 시 자동 실행, 데이터 폴더(`%APPDATA%/DevMata AI`), `JWT_SECRET` 자동 생성, API·웹을 앱 안에서 실행 | Claude | 1단계 | 기본 완료 · `npm run desktop`, 앱 창·트레이·자동 마이그레이션·웹 정적 제공 동작 확인. 정식 아이콘·자동 실행 확인은 5단계(설치본) |
 | 4 | **Claude 연결 안내**: Claude Code 설치 여부·버전 확인 API, 미설치 시 공식 설치 안내, 로그인 확인(기존 연결 테스트 재사용), 첫 실행 온보딩 화면 | Codex | 없음 (바로 시작 가능) | 구현 완료 · 타입/빌드/단위 테스트 통과, Electron 화면 검수는 3단계 후 |
-| 5 | **설치 파일·배포**: electron-builder(NSIS) 설치 파일, GitHub Releases 업로드, 자동 업데이트, 빌드 CI | Claude | 3단계 | 진행 중 · 설치 파일 완료(`npm run desktop:dist` → `%LOCALAPPDATA%\DevMataAI-build\release`, 설치본 API·화면·DB 동작 확인). 남음: 설치본 실제 설치·자동 실행 확인, 다른 사용자용 Google 키, 자동 업데이트, GitHub Releases, CI |
-| 6 | **사용자 문서**: README를 "설치 파일 받기 → Claude 연결" 중심으로 재작성, 개발자용 실행 방법은 아래로 | Codex | 5단계 | 대기 |
+| 5 | **설치 파일·배포**: electron-builder(NSIS) 설치 파일, GitHub Releases 업로드, 자동 업데이트, 빌드 CI | Claude | 3단계 | 2026-11-12 최신 설치 파일 재생성·격리 데이터로 설치본 API/웹/마이그레이션 검사 완료. CI·자동 업데이트 구현·Google 배포 Secrets 등록 완료. 남음: NSIS 실제 설치·Windows 자동 실행 확인, 버전 갱신·GitHub Releases 게시·자동 업데이트 실기동 |
+| 6 | **사용자 문서**: README를 "설치 파일 받기 → AI 연결" 중심으로 재작성, 개발자용 실행 방법은 아래로 | Codex | 5단계 | 완료 · 설치·3종 AI 연결·외부 연동·트레이·업데이트·데이터/복원·문제 해결 안내, 기존 개발 설명은 아래로 분리 |
 
 진행 순서: **1(Claude) ∥ 4(Codex)** → **2(Codex) ∥ 3(Claude)** → **5(Claude)** → **6(Codex)**
 
@@ -90,7 +90,7 @@ POST /api/desktop/update  { action: "check" | "install" } → 202 (install 은 �
 | U2 | 앱에서 Google **지금 동기화** 눌러 일정이 들어오는지 확인 | 지금 |
 | U3 | 새 설치 파일을 직접 설치해 확인 (개발용 앱은 트레이 → 종료 후) | C1 후 |
 | U4 | 기존 '웹 애플리케이션' OAuth 클라이언트 삭제 (Desktop 클라이언트로 잘 되면) | U3 후 |
-| U5 | GitHub 저장소 Settings → Secrets 에 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` 등록 (CI 가 설치 파일을 만들 때 씀). 터미널: `gh secret set GOOGLE_CLIENT_ID` 실행 후 값 붙여넣기, `GOOGLE_CLIENT_SECRET` 도 같게 (값은 `apps/api/.env`) | 첫 배포 전 |
+| U5 | GitHub 저장소 Secrets의 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` 등록 | 완료 · 2026-11-12 이름만 조회해 두 항목 등록 확인(값 조회/출력 없음) |
 | U6 | (선택) Google 앱 검수 신청 → "확인되지 않은 앱" 경고 제거. 본인 소유 도메인 확인 필요 (GitHub Pages 가능) | 나중 |
 | U7 | (선택) 코드 서명 인증서 → SmartScreen 경고 제거. 유료 | 나중 |
 
@@ -98,7 +98,7 @@ POST /api/desktop/update  { action: "check" | "install" } → 202 (install 은 �
 
 | # | 할 일 |
 |---|---|
-| C1 | 설치 파일 다시 빌드 (새 Desktop 클라이언트·PKCE·앱 복귀 반영), 설치본 실제 실행 점검: 창·트레이·작업 관리자 이름·Windows 시작 시 자동 실행 메뉴·제거 후 데이터 유지 |
+| C1 | 2026-11-12 최신 설치 파일 재빌드 완료. 패키지 API·최신 웹·Google 기본값·대화 기록 마이그레이션·빈 사용자 DB·AI 인증 보호 검사 통과. 남음: NSIS 설치 마법사를 거친 실제 설치·창/트레이·Windows 자동 실행·제거 후 데이터 유지 점검 |
 | C2 | 예전 자동 실행 정리: `Startup\DevMata AI.lnk`(serve.mjs, 5173/3000) 제거 → 설치본의 자동 실행으로 대체. `start.bat`·`serve.mjs` 는 개발용으로 남기고 안내 갱신. OneDrive 안 빌드 찌꺼기(`apps/desktop/release`) 삭제 |
 | C3 | GitHub Actions: push/PR → 타입 검사·전체 테스트, `v*` 태그 → windows 에서 설치 파일 빌드 후 Releases 업로드 (`GITHUB_TOKEN`, Google 키는 Secrets) → **완료** (`.github/workflows/ci.yml`, `release.yml`. Secrets 는 U5) |
 | C4 | 자동 업데이트 (electron-updater + GitHub Releases): 시작 시·6시간마다 확인, 내려받으면 트레이·화면에 "재시작해서 업데이트". `POST /api/desktop/update` → **완료** (`apps/desktop/src/updater.cjs`, 화면은 도움말 → 앱 정보. 첫 자동 업데이트는 이 기능이 들어간 버전을 한 번 손으로 설치한 뒤부터) |
@@ -112,7 +112,7 @@ POST /api/desktop/update  { action: "check" | "install" } → 202 (install 은 �
 
 | # | 할 일 |
 |---|---|
-| X1 | **6단계 README 재작성**: ① 설치 파일 받기(Releases 링크) ② 설치·SmartScreen "추가 정보 → 실행" ③ 첫 실행: 회원가입(첫 계정 = 관리자) ④ Claude Code 설치·로그인·연결 테스트 ⑤ 연동: Google 은 버튼만, Notion·GitHub 은 각자 토큰 ⑥ 업데이트·제거·데이터 위치(`%APPDATA%\DevMata AI`)·백업·복원 ⑦ 자주 묻는 질문(포트 사용 중, Google 경고, AI 연결 실패). 개발자용 실행은 아래 "개발" 절로. 스크린샷 자리 표시 |
+| X1 | 완료(2026-11-12). README 상단을 설치 파일 → 가입 → Claude/ChatGPT/Gemini 연결 → 기능 → 외부 연동 → 종료/업데이트/복원 → 문제 해결 순서로 정리. 개발 실행 설명은 하단으로 분리. GitHub Releases 미게시 상태와 AI CLI 별도 설치를 명시 |
 | X2 | 설정 → Google Calendar 카드: 데스크톱에서는 리디렉션 URI·Google Cloud 설정 문구 숨김 (Desktop 클라이언트는 등록 불필요). 연결 결과(`?google=`) 안내를 보여 준 뒤 주소에서 쿼리 제거. 실패 이유 문구 다듬기 |
 | X3 | Google 연결 직후 자동으로 첫 동기화, "마지막 동기화 시각·가져오는 기간·가져온 일정 수" 표시, 0개일 때 이유 안내 (기본 캘린더만, 기간 밖) |
 | X4 | 앱 연결 설정(관리자) 화면: Google 키가 **설치본 기본값**으로 채워져 있으면 "기본값 사용 중" 표시, 직접 입력하면 덮어쓴다는 안내. API 응답에 값 출처(`db`/`env`) 추가 (app-settings 모듈) |
