@@ -1,7 +1,16 @@
-import { describe, expect, it } from 'vitest';
-import { folderRows, updateView } from './AppInfoCard';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { describe, expect, it, vi } from 'vitest';
+import AppInfoCard, { folderRows, updateView } from './AppInfoCard';
+
+vi.mock('../lib/useAsync', () => ({ useAsync: () => ({ data: { desktop: true, version: '1.2.3', dataDir: 'C:/private/data', logDir: 'C:/private/logs', update: { state: 'ready', version: '2.0.0' } } }) }));
 
 describe('앱 정보', () => {
+  it('일반 화면에는 버전만 표시하고 폴더와 관리 버튼을 숨긴다', () => {
+    const html = renderToStaticMarkup(createElement(AppInfoCard));
+    expect(html).toContain('v1.2.3');
+    for (const text of ['C:/private', '데이터 폴더', '로그 폴더', '업데이트', '<button']) expect(html).not.toContain(text);
+  });
   it('웹 실행에서는 폴더를 보여 주지 않는다', () => {
     expect(folderRows({ desktop: false, version: '0.1.0', dataDir: 'C:/x' })).toEqual([]);
   });

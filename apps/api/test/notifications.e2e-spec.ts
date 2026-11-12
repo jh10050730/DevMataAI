@@ -69,6 +69,34 @@ describe('deadline notifications', () => {
     await service().sync();
     expect(await db().notification.count({ where: { targetId: missed.id } })).toBe(0);
   });
+  it('지운 알림은 다시 확인해도 돌아오지 않고, 본인 알림만 지울 수 있음', async () => {
+    await service().sync();
+    await api().delete('/api/notifications').set(auth()).expect(200);
+    const soon = (hours: number) => new Date(Date.now() + hours * 3600000);
+    const first = await db().task.create({ data: { userId: a.user.id, title: '지울 알림', dueDate: soon(5) } });
+    const second = await db().task.create({ data: { userId: a.user.id, title: '남길 알림', dueDate: soon(6) } });
+    await service().sync();
+    const rows = await db().notification.findMany({ where: { targetId: { in: [first.id, second.id] } } });
+    const row = rows.find(r => r.targetId === first.id)!;
+    await api().delete(`/api/notifications/${row.id}`).set(auth(b)).expect(404);
+    await api().delete(`/api/notifications/${row.id}`).set(auth()).expect(200);
+    await api().delete(`/api/notifications/${row.id}`).set(auth()).expect(404);
+    await service().sync();
+    let list = (await api().get('/api/notifications').set(auth()).expect(200)).body;
+    expect(list.notifications.map((n: { body: string }) => n.body.split(' · ')[0])).toEqual(['남길 알림']);
+    expect(list.unreadCount).toBe(1);
+    expect(await db().notification.count({ where: { targetId: first.id } })).toBe(1);
+    // 마감을 바꾸면 새 알림으로 다시 온다
+    await db().task.update({ where: { id: first.id }, data: { dueDate: soon(7) } });
+    await service().sync();
+    list = (await api().get('/api/notifications').set(auth()).expect(200)).body;
+    expect(list.notifications).toHaveLength(2);
+    expect((await api().delete('/api/notifications').set(auth()).expect(200)).body.count).toBe(2);
+    await service().sync();
+    list = (await api().get('/api/notifications').set(auth()).expect(200)).body;
+    expect(list).toEqual({ notifications: [], unreadCount: 0 });
+    await api().delete('/api/notifications').expect(401);
+  });
   it('알림 설정은 본인에게만 적용되고 인증·불필요한 필드는 차단', async () => {
     await api().get('/api/notifications').expect(401);
     await api().patch('/api/notifications/settings').set(auth()).send({ notificationInApp: false, notificationEmail: true }).expect(200);

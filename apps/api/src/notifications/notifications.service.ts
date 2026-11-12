@@ -76,7 +76,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     return !!event && eventDeadline(event).getTime() === row.deadlineAt.getTime();
   }
   private async sendPending(now: Date) {
-    const pending = await this.db.notification.findMany({ where: { emailSentAt: null, emailAttempts: { lt: 3 }, deadlineAt: { gt: now }, user: { notificationEmail: true }, OR: [{ nextEmailAttemptAt: null }, { nextEmailAttemptAt: { lte: now } }] }, include: { user: { select: { email: true } } }, orderBy: { createdAt: 'desc' }, take: 20 });
+    const pending = await this.db.notification.findMany({ where: { emailSentAt: null, dismissedAt: null, emailAttempts: { lt: 3 }, deadlineAt: { gt: now }, user: { notificationEmail: true }, OR: [{ nextEmailAttemptAt: null }, { nextEmailAttemptAt: { lte: now } }] }, include: { user: { select: { email: true } } }, orderBy: { createdAt: 'desc' }, take: 20 });
     for (const row of pending) {
       if (deadlineMilestone(row.deadlineAt, now)?.key !== row.milestone || !(await this.stillCurrent(row))) continue;
       // Claim before sending: prevents simultaneous scheduler instances sending the same row.
@@ -102,15 +102,27 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     const preferences = await this.settings(userId);
     if (!preferences.notificationInApp) return { notifications: [], unreadCount: 0 };
     const [notifications, unreadCount] = await Promise.all([
-      this.db.notification.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 50, select: { id: true, title: true, body: true, href: true, readAt: true, createdAt: true } }),
-      this.db.notification.count({ where: { userId, readAt: null } }),
+      this.db.notification.findMany({ where: { userId, dismissedAt: null }, orderBy: { createdAt: 'desc' }, take: 50, select: { id: true, title: true, body: true, href: true, readAt: true, createdAt: true } }),
+      this.db.notification.count({ where: { userId, readAt: null, dismissedAt: null } }),
     ]);
     return { notifications, unreadCount };
   }
   async read(userId: string, id: string) {
-    const result = await this.db.notification.updateMany({ where: { id, userId }, data: { readAt: new Date() } });
+    const result = await this.db.notification.updateMany({ where: { id, userId, dismissedAt: null }, data: { readAt: new Date() } });
     if (!result.count) throw new NotFoundException('알림을 찾을 수 없습니다.');
     return { id };
   }
-  async readAll(userId: string) { await this.db.notification.updateMany({ where: { userId, readAt: null }, data: { readAt: new Date() } }); return { success: true }; }
+  async readAll(userId: string) { await this.db.notification.updateMany({ where: { userId, readAt: null, dismissedAt: null }, data: { readAt: new Date() } }); return { success: true }; }
+  /** 알림함에서 지운다. 행을 지우면 다음 마감 확인 때 같은 알림이 다시 생기므로 지운 시각만 남긴다 (마감이 바뀌면 새 알림으로 다시 온다) */
+  async dismiss(userId: string, id: string) {
+    const now = new Date();
+    const result = await this.db.notification.updateMany({ where: { id, userId, dismissedAt: null }, data: { dismissedAt: now, readAt: now } });
+    if (!result.count) throw new NotFoundException('알림을 찾을 수 없습니다.');
+    return { id };
+  }
+  async dismissAll(userId: string) {
+    const now = new Date();
+    const result = await this.db.notification.updateMany({ where: { userId, dismissedAt: null }, data: { dismissedAt: now, readAt: now } });
+    return { count: result.count };
+  }
 }

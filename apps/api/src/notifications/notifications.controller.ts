@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
 import { IsBoolean } from 'class-validator';
 import { NotificationsService } from './notifications.service';
 class NotificationSettingsDto {
@@ -14,4 +14,6 @@ export class NotificationsController {
   @Patch('settings') updateSettings(@Req() req: AuthRequest, @Body() dto: NotificationSettingsDto) { return this.notifications.updateSettings(req.user.id, dto); }
   @Post('read-all') readAll(@Req() req: AuthRequest) { return this.notifications.readAll(req.user.id); }
   @Patch(':id/read') read(@Req() req: AuthRequest, @Param('id') id: string) { return this.notifications.read(req.user.id, id); }
+  @Delete() dismissAll(@Req() req: AuthRequest) { return this.notifications.dismissAll(req.user.id); }
+  @Delete(':id') dismiss(@Req() req: AuthRequest, @Param('id') id: string) { return this.notifications.dismiss(req.user.id, id); }
 }
