@@ -50,3 +50,17 @@ export function dueLabel(dueIso: string, now = new Date()): { text: string; tone
   if (diff <= 2) return { text: `D-${diff}`, tone: 'soon' };
   return { text: fmtDate(due), tone: 'normal' };
 }
+
+/** 지금 시간대. 브리핑 문구를 맞춘다 (오후에 "아침 브리핑"이라고 하면 어색하다) */
+export function dayPart(d = new Date()) {
+  const h = d.getHours();
+  return h < 5 ? '새벽' : h < 10 ? '아침' : h < 12 ? '오전' : h < 18 ? '오후' : '저녁';
+}
+
+/** AI 비서에게 보내는 오늘 브리핑 요청. 하루가 시작되기 전(새벽·아침)이면 하루 전체, 그 뒤면 남은 시간 기준으로 부탁한다 */
+export function briefingRequest(d = new Date()) {
+  const part = dayPart(d);
+  return part === '새벽' || part === '아침'
+    ? `오늘의 ${part} 브리핑을 해줘. 일정·할 일·복습·프로젝트·뉴스를 근거로 오늘 우선순위를 제안해줘.`
+    : `지금은 ${part}이야. 오늘 ${part} 브리핑을 해줘. 이미 지난 일정은 빼고, 남은 일정·할 일·복습·프로젝트·뉴스를 근거로 남은 시간의 우선순위를 제안해줘.`;
+}

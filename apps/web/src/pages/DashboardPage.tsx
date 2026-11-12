@@ -191,7 +191,7 @@ export default function DashboardPage() {
               )}
             </Card>
 
-            <Shortcut icon={Sparkles} title="AI 비서 · 아침 브리핑" to="/assistant" text="일정·할 일·복습·프로젝트·뉴스를 모아 오늘의 우선순위를 보여주고, 채팅으로 정리를 도와줘요." />
+            <Shortcut icon={Sparkles} title="AI 비서 · 오늘 브리핑" to="/assistant" text="일정·할 일·복습·프로젝트·뉴스를 모아 오늘의 우선순위를 보여주고, 채팅으로 정리를 도와줘요." />
           </div>
 
           <div className="grid gap-6 @2xl:grid-cols-3">

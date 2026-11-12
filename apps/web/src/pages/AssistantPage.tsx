@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router';
 import { Bot, Search, Sun } from 'lucide-react';
 import { api, errorMessage } from '../lib/api';
 import { onDataChanged } from '../lib/dataEvents';
+import { briefingRequest, dayPart } from '../lib/date';
 import { Badge, Button, Card, EmptyState, ErrorState, Input, Spinner } from '../components/ui';
 import NewsDigestCard from '../components/NewsDigestCard';
 import AssistantChat from '../components/AssistantChat';
@@ -39,10 +40,10 @@ export default function AssistantPage() {
       <form className="flex gap-2" onSubmit={e => { e.preventDefault(); setParams(searchInput.trim() ? { q: searchInput.trim() } : {}); }}><Input required maxLength={100} aria-label="통합 검색" placeholder="일정·할 일·학습·프로젝트·뉴스 검색" value={searchInput} onChange={e => setSearchInput(e.target.value)} /><Button type="submit">검색</Button></form>
       {searching ? <Spinner /> : q && <><p className="my-3 text-xs text-muted">종류별 최신 최대 20개 · {results.length}개 표시</p>{!results.length ? <EmptyState title="검색 결과가 없습니다" /> : <div className="max-h-96 space-y-3 overflow-y-auto">{results.map(r => <div key={`${r.type}-${r.id}`}><Badge className="mr-2 bg-surface-2">{labels[r.type]}</Badge><ResultLink href={r.href}>{r.title}</ResultLink><p className="mt-1 line-clamp-2 text-xs text-muted">{r.excerpt}</p></div>)}</div>}</>}
     </Card>
-    {!briefing ? <Spinner /> : <Card title={`아침 브리핑 · ${briefing.date} 한국 시간`} icon={Sun} action={<Button variant="secondary" disabled={busy} onClick={() => loadBriefing().catch(e => setError(errorMessage(e)))}>새로고침</Button>}>
+    {!briefing ? <Spinner /> : <Card title={`${dayPart()} 브리핑 · ${briefing.date} 한국 시간`} icon={Sun} action={<Button variant="secondary" disabled={busy} onClick={() => loadBriefing().catch(e => setError(errorMessage(e)))}>새로고침</Button>}>
       <div className="grid gap-3 @xl:grid-cols-4">{[['미완료 할 일', briefing.counts.activeTasks], ['지난 마감', briefing.overdue.length], ['오늘 일정', briefing.events.length], ['복습 필요', briefing.reviews.length]].map(([label, n]) => <div key={label} className="rounded-xl bg-surface-2 p-3"><p className="text-xs text-muted">{label}</p><p className="mt-1 text-2xl font-semibold">{n}</p></div>)}</div>
       <div className="mt-4 grid gap-5 @2xl:grid-cols-2"><div><h3 className="mb-2 text-sm font-semibold">오늘의 우선순위</h3>{briefing.priorities.length ? briefing.priorities.map((p, i) => <p key={i} className="mb-1 text-sm">{i + 1}. {p}</p>) : <p className="text-sm text-muted">등록된 마감·복습 우선순위가 없습니다.</p>}<h3 className="mb-2 mt-4 text-sm font-semibold">오늘 일정</h3>{briefing.events.map(e => <p key={e.id} className="text-sm"><ResultLink href="/calendar">{new Date(e.startAt).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit' })} · {e.title}</ResultLink></p>)}</div><div><h3 className="mb-2 text-sm font-semibold">프로젝트 현황</h3>{briefing.projects.map(p => <p key={p.id} className="mb-1 text-sm"><ResultLink href="/projects">{p.name} · {p.progress.rate}%</ResultLink> · 미완료 {p.items.filter(i => i.status !== 'DONE').length}개</p>)}<h3 className="mb-2 mt-4 text-sm font-semibold">오늘의 뉴스</h3>{briefing.news.slice(0, 5).map(n => <p key={n.id} className="mb-1 text-sm"><ResultLink href={n.url}>{n.title}</ResultLink><span className="ml-1 text-xs text-muted">{n.source}</span></p>)}</div></div>
-      <p className="mt-4 text-xs text-muted">{briefing.limitations}</p><Button className="mt-3" disabled={busy} onClick={() => void send('오늘의 아침 브리핑을 해줘. 일정·할 일·복습·프로젝트·뉴스를 근거로 오늘 우선순위를 제안해줘.')}>AI에게 오늘 브리핑 요청</Button>
+      <p className="mt-4 text-xs text-muted">{briefing.limitations}</p><Button className="mt-3" disabled={busy} onClick={() => void send(briefingRequest())}>AI에게 오늘 브리핑 요청</Button>
     </Card>}
     <NewsDigestCard />
     <Card title="개인 비서 채팅" icon={Bot}>

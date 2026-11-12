@@ -110,7 +110,7 @@ describe('daily features', () => {
       await service.tick(kst('2026-11-13T09:00'));
       const rows = await briefings();
       expect(rows).toHaveLength(1);
-      expect(rows[0]).toMatchObject({ title: '☀️ 오늘의 브리핑', body: '15:00 치과 예약이 있어요\n2줄\n3줄', href: '/', deadlineAt: today });
+      expect(rows[0]).toMatchObject({ title: '🌅 아침 브리핑', body: '15:00 치과 예약이 있어요\n2줄\n3줄', href: '/', deadlineAt: today });
       expect(await briefings(b)).toHaveLength(0); // 끈 사람은 받지 않음
       const prompt = JSON.parse(ai.complete.mock.calls.find(c => c[1] === 'briefing:morning')![2].prompt);
       expect(prompt.events.map((e: { title: string }) => e.title)).toContain('치과');
@@ -118,7 +118,7 @@ describe('daily features', () => {
       await app.get(NotificationsService).sync(kst('2026-11-13T09:01'));
       expect(await briefings()).toHaveLength(1);
       // 알림함에 보이고 누르면 홈으로
-      expect((await api().get('/api/notifications').set(auth()).expect(200)).body.notifications.some((n: { title: string }) => n.title === '☀️ 오늘의 브리핑')).toBe(true);
+      expect((await api().get('/api/notifications').set(auth()).expect(200)).body.notifications.some((n: { title: string }) => n.title === '🌅 아침 브리핑')).toBe(true);
     });
 
     it('저녁에 처음 켰으면 그날은 보내지 않고, AI가 없으면 규칙으로 쓴다', async () => {
