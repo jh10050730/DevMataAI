@@ -112,7 +112,7 @@ describe('daily features', () => {
       expect(rows).toHaveLength(1);
       expect(rows[0]).toMatchObject({ title: '🌅 아침 브리핑', body: '15:00 치과 예약이 있어요\n2줄\n3줄', href: '/', deadlineAt: today });
       expect(await briefings(b)).toHaveLength(0); // 끈 사람은 받지 않음
-      const prompt = JSON.parse(ai.complete.mock.calls.find(c => c[1] === 'briefing:morning')![2].prompt);
+      const prompt = JSON.parse(ai.complete.mock.calls.find(c => c[0] === a.user.id && c[1] === 'briefing:morning')![2].prompt);
       expect(prompt.events.map((e: { title: string }) => e.title)).toContain('치과');
       // 마감 확인이 브리핑 알림을 지우지 않는다
       await app.get(NotificationsService).sync(kst('2026-11-13T09:01'));
@@ -129,7 +129,7 @@ describe('daily features', () => {
       await db.task.create({ data: { userId: a.user.id, title: '세금 내기', dueDate: kst('2026-11-15T18:00') } });
       const preview = await service.compose(a.user.id, kst('2026-11-15T08:00'));
       expect(preview.ai).toBe(false);
-      expect(preview.text).toContain('오늘 마감 세금 내기');
+      expect(preview.text).toMatch(/오늘 마감 .*세금 내기/); // 앞 테스트의 반복 할 일이 같은 날 마감일 수 있다
       expect((await api().post('/api/briefing/preview').set(auth()).expect(201)).body).toHaveProperty('text');
     });
   });
