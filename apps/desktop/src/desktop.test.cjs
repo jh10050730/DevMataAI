@@ -5,7 +5,7 @@ const { tmpdir } = require('node:os');
 const { join } = require('node:path');
 const net = require('node:net');
 const { DEFAULT_PORT, claimAutoStartDefault, loadConfig } = require('./config.cjs');
-const { appPaths, apiEnv, isAppUrl, isExternalUrl } = require('./paths.cjs');
+const { appPaths, apiEnv, isAppUrl, isExternalUrl, protocolRoute } = require('./paths.cjs');
 const { portFree } = require('./server.cjs');
 
 test('config creates a secret once and keeps it', () => {
@@ -195,4 +195,18 @@ test('빠른 입력: 단축키 후보와 트레이 표시 이름', () => {
   // 앱 창 로그인은 두 저장소 중 한 곳에서만 읽는다 (그 밖의 값은 건드리지 않는다)
   assert.match(QUICK_TOKEN_SCRIPT, /devmata-session-token/);
   assert.match(QUICK_TOKEN_SCRIPT, /devmata-remembered-token/);
+});
+
+test('알림의 devmata:// 주소에서 앱 화면 경로만 꺼낸다', () => {
+  const exe = 'C:\Program Files\DevMata AI\DevMata AI.exe';
+  assert.equal(protocolRoute([exe, 'devmata://open?path=%2Fcalendar%3Fview%3Dweek']), '/calendar?view=week');
+  assert.equal(protocolRoute([exe, '--allow-file-access', 'devmata://open/?path=%2F']), '/');
+  assert.equal(protocolRoute([exe, 'DEVMATA://open?path=%2Fsettings']), '/settings');
+  assert.equal(protocolRoute([exe, 'devmata://open']), '/');
+  assert.equal(protocolRoute([exe]), null);
+  assert.equal(protocolRoute([exe, '--hidden']), null);
+  // 앱 밖 주소나 이상한 경로는 열지 않는다
+  for (const bad of ['devmata://open?path=https%3A%2F%2Fevil.example', 'devmata://open?path=%2F%2Fevil.example', 'devmata://open?path=%2F%5Cevil', 'devmata://other?path=%2F', 'devmata://open?path=calendar']) {
+    assert.equal(protocolRoute([exe, bad]), null, bad);
+  }
 });

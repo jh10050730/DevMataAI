@@ -2,7 +2,9 @@ import { Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } 
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { deadlineMilestone, eventDeadline } from './deadline.logic';
-import { desktopToastEnabled, showDesktopToast } from './desktop-toast';
+import { expandEvents, isRepeat } from '../common/recurrence';
+import { koreanDayStart } from '../news/news.schedule';
+import { desktopToastEnabled, showDesktopToast, toastLink } from './desktop-toast';
 
 /** 데스크톱 앱(Electron)이 PC가 깨어났을 때 보내는 신호 */
 export const isWakeMessage = (message: unknown) => !!message && typeof message === 'object' && (message as { type?: unknown }).type === 'wake';
@@ -27,28 +29,35 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     return this.running;
   }
   private async collect(now: Date) {
+    const today = koreanDayStart(now);
+    const tomorrow = new Date(today.getTime() + 86400000);
     const [tasks, events, existing] = await Promise.all([
       this.db.task.findMany({ where: { completed: false, dueDate: { not: null } }, select: { id: true, userId: true, title: true, dueDate: true } }),
-      // 반복 일정은 회차마다 한 달 전부터 알리면 너무 잦아서 마감 알림에서 뺀다 (아침 브리핑에서 알려 준다)
-      this.db.event.findMany({ where: { repeat: null }, select: { id: true, userId: true, title: true, endAt: true, allDay: true } }),
+      this.db.event.findMany({ select: { id: true, userId: true, title: true, startAt: true, endAt: true, allDay: true, repeat: true, repeatUntil: true } }),
       // 마감 알림만 다룬다 (아침 브리핑 같은 다른 알림은 건드리지 않는다)
       this.db.notification.findMany({ where: { targetType: { in: ['TASK', 'EVENT'] } }, select: { id: true, targetType: true, targetId: true, deadlineAt: true, milestone: true } }),
     ]);
     const targets = [
-      ...tasks.map(task => ({ id: task.id, userId: task.userId, title: task.title, deadline: task.dueDate!, type: 'TASK', href: '/calendar' })),
-      ...events.map(event => ({ id: event.id, userId: event.userId, title: event.title, deadline: eventDeadline(event), type: 'EVENT', href: '/calendar' })),
+      ...tasks.map(task => ({ id: task.id, userId: task.userId, title: task.title, deadline: task.dueDate!, type: 'TASK', href: '/calendar', sameDay: false })),
+      ...events.filter(event => !isRepeat(event.repeat)).map(event => ({ id: event.id, userId: event.userId, title: event.title, deadline: eventDeadline(event), type: 'EVENT', href: '/calendar', sameDay: false })),
+      ...expandEvents(events.filter(event => isRepeat(event.repeat)), today, tomorrow)
+        .filter(event => event.startAt >= today && event.endAt > now)
+        .map(event => ({ id: event.id, userId: event.userId, title: event.title, deadline: event.startAt, type: 'EVENT', href: '/calendar', sameDay: true })),
     ];
     const targetMap = new Map(targets.map(target => [target.type + ':' + target.id, target]));
-    const stale = existing.filter(row => targetMap.get(row.targetType + ':' + row.targetId)?.deadline.getTime() !== row.deadlineAt.getTime());
+    const stale = existing.filter(row => {
+      const target = targetMap.get(row.targetType + ':' + row.targetId);
+      return !target || target.deadline.getTime() !== row.deadlineAt.getTime() || (target.sameDay && row.milestone !== 'TODAY');
+    });
     if (stale.length) await this.db.notification.deleteMany({ where: { id: { in: stale.map(row => row.id) } } });
     const known = new Set(existing.map(row => [row.targetType, row.targetId, row.deadlineAt.getTime(), row.milestone].join(':')));
     const fresh: { userId: string; title: string; body: string; href: string }[] = [];
     for (const target of targets) {
-      const stage = deadlineMilestone(target.deadline, now, { overdue: target.type === 'TASK' });
+      const stage = target.sameDay ? { key: 'TODAY', label: '당일' } : deadlineMilestone(target.deadline, now, { overdue: target.type === 'TASK' });
       if (!stage) continue;
       const deadlineText = target.deadline.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'medium', timeStyle: 'short' });
-      const title = `${target.type === 'TASK' ? '할 일' : '일정'} 마감 ${stage.label}`;
-      const body = `${target.title} · 마감 ${deadlineText} (한국 시간)`;
+      const title = target.sameDay ? '오늘 반복 일정' : `${target.type === 'TASK' ? '할 일' : '일정'} 마감 ${stage.label}`;
+      const body = `${target.title} · ${target.sameDay ? '시작' : '마감'} ${deadlineText} (한국 시간)`;
       await this.db.notification.upsert({
         where: { targetType_targetId_deadlineAt_milestone: { targetType: target.type, targetId: target.id, deadlineAt: target.deadline, milestone: stage.key } },
         create: { userId: target.userId, targetType: target.type, targetId: target.id, deadlineAt: target.deadline, milestone: stage.key, title, body, href: target.href, createdAt: now },
@@ -68,19 +77,25 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     for (const row of rows.slice(0, 3)) await showDesktopToast(row.title, row.body, this.link(row.href));
     if (rows.length > 3) await showDesktopToast('마감 알림', `외 ${rows.length - 3}건의 마감 알림이 있습니다.`, this.link('/calendar'));
   }
-  private link(href: string) { try { return this.mail.publicUrl(href).href; } catch { return undefined; } }
-  private async stillCurrent(row: { userId: string; targetType: string; targetId: string; deadlineAt: Date }) {
+  private link(href: string) { return toastLink(href, () => this.mail.publicUrl(href).href); }
+  private async stillCurrent(row: { userId: string; targetType: string; targetId: string; deadlineAt: Date; milestone: string }, now: Date) {
     if (row.targetType === 'TASK') {
       const task = await this.db.task.findFirst({ where: { id: row.targetId, userId: row.userId, completed: false } });
       return task?.dueDate?.getTime() === row.deadlineAt.getTime();
     }
     const event = await this.db.event.findFirst({ where: { id: row.targetId, userId: row.userId } });
+    if (event && isRepeat(event.repeat)) {
+      const today = koreanDayStart(now);
+      return row.milestone === 'TODAY' && expandEvents([event], today, new Date(+today + 86400000))
+        .some(occurrence => occurrence.startAt >= today && +occurrence.startAt === +row.deadlineAt && occurrence.endAt > now);
+    }
+    if (row.milestone === 'TODAY') return false;
     return !!event && eventDeadline(event).getTime() === row.deadlineAt.getTime();
   }
   private async sendPending(now: Date) {
-    const pending = await this.db.notification.findMany({ where: { targetType: { in: ['TASK', 'EVENT'] }, emailSentAt: null, dismissedAt: null, emailAttempts: { lt: 3 }, deadlineAt: { gt: now }, user: { notificationEmail: true }, OR: [{ nextEmailAttemptAt: null }, { nextEmailAttemptAt: { lte: now } }] }, include: { user: { select: { email: true } } }, orderBy: { createdAt: 'desc' }, take: 20 });
+    const pending = await this.db.notification.findMany({ where: { targetType: { in: ['TASK', 'EVENT'] }, emailSentAt: null, dismissedAt: null, emailAttempts: { lt: 3 }, AND: [{ OR: [{ deadlineAt: { gt: now } }, { milestone: 'TODAY' }] }], user: { notificationEmail: true }, OR: [{ nextEmailAttemptAt: null }, { nextEmailAttemptAt: { lte: now } }] }, include: { user: { select: { email: true } } }, orderBy: { createdAt: 'desc' }, take: 20 });
     for (const row of pending) {
-      if (deadlineMilestone(row.deadlineAt, now)?.key !== row.milestone || !(await this.stillCurrent(row))) continue;
+      if ((row.milestone !== 'TODAY' && deadlineMilestone(row.deadlineAt, now)?.key !== row.milestone) || !(await this.stillCurrent(row, now))) continue;
       // Claim before sending: prevents simultaneous scheduler instances sending the same row.
       const lease = new Date(now.getTime() + 15 * 60000);
       const claimed = await this.db.notification.updateMany({ where: { id: row.id, emailSentAt: null, emailAttempts: row.emailAttempts, OR: [{ nextEmailAttemptAt: null }, { nextEmailAttemptAt: { lte: now } }] }, data: { emailAttempts: { increment: 1 }, nextEmailAttemptAt: lease } });
@@ -93,7 +108,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
   }
   async settings(userId: string) {
     const user = await this.db.user.findUniqueOrThrow({ where: { id: userId }, select: { notificationInApp: true, notificationEmail: true, briefingEnabled: true, briefingHour: true } });
-    return { ...user, emailConfigured: this.mail.configured, notice: '할 일 마감일·일정 종료 기준 한 달 전, 3주 전, 1주 전, 하루 전에 알립니다. 앱이 켜져 있는 동안 1분마다, PC를 켜거나 절전에서 깨어나면 바로 확인합니다. 꺼져 있어 놓친 알림은 가장 가까운 단계 한 건만 보내고, 끝내지 않은 할 일의 마감이 그사이 지났다면 3일 안에 "마감 지남"을 한 번 알립니다. 반복 일정은 마감 알림 대신 아침 브리핑에서 알려 드려요.', desktopEnabled: desktopToastEnabled() };
+    return { ...user, emailConfigured: this.mail.configured, notice: '할 일 마감일·일정 종료 기준 한 달 전, 3주 전, 1주 전, 하루 전에 알립니다. 앱이 켜져 있는 동안 1분마다, PC를 켜거나 절전에서 깨어나면 바로 확인합니다. 꺼져 있어 놓친 알림은 가장 가까운 단계 한 건만 보내고, 끝내지 않은 할 일의 마감이 그사이 지났다면 3일 안에 "마감 지남"을 한 번 알립니다. 학생회 회의처럼 반복되는 일정은 한국 시간 기준 해당 회차 당일에만 한 번 알립니다.', desktopEnabled: desktopToastEnabled() };
   }
   async updateSettings(userId: string, data: { notificationInApp: boolean; notificationEmail: boolean; briefingEnabled?: boolean; briefingHour?: number }) {
     await this.db.user.update({ where: { id: userId }, data });

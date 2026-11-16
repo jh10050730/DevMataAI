@@ -1,4 +1,4 @@
-import { desktopToastEnabled, toastXml } from './desktop-toast';
+import { desktopToastEnabled, toastLink, toastXml } from './desktop-toast';
 
 describe('desktop-toast', () => {
   it('제목·본문·주소의 특수문자를 XML 로 안전하게 넣는다', () => {
@@ -20,5 +20,13 @@ describe('desktop-toast', () => {
     expect(desktopToastEnabled({}, 'linux')).toBe(false);
     expect(desktopToastEnabled({ NODE_ENV: 'test' }, 'win32')).toBe(false);
     expect(desktopToastEnabled({ DESKTOP_NOTIFICATIONS: 'false' }, 'win32')).toBe(false);
+  });
+
+  it('데스크톱 앱에서는 알림을 누르면 앱 창으로, 웹 서버에서는 브라우저 주소로 연다', () => {
+    const web = () => 'http://localhost:3000/calendar';
+    expect(toastLink('/calendar?view=week', web, { DEVMATA_DESKTOP: '1' })).toBe('devmata://open?path=%2Fcalendar%3Fview%3Dweek');
+    expect(toastLink('calendar', web, { DEVMATA_DESKTOP: '1' })).toBe('devmata://open?path=%2Fcalendar');
+    expect(toastLink('/calendar', web, {})).toBe('http://localhost:3000/calendar');
+    expect(toastLink('/', () => { throw new Error('주소 없음'); }, {})).toBeUndefined();
   });
 });

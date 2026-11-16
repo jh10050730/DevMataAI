@@ -27,6 +27,14 @@
       "!src/**/*.test.cjs"
     ],
     "asar": true,
+    "protocols": [
+      {
+        "name": "DevMata AI",
+        "schemes": [
+          "devmata"
+        ]
+      }
+    ],
     "npmRebuild": false,
     "win": {
       "target": [

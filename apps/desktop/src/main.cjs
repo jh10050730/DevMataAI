@@ -2,7 +2,7 @@
 const { app, BrowserWindow, Menu, Notification, Tray, dialog, globalShortcut, nativeImage, powerMonitor, screen, shell } = require('electron');
 const { join } = require('node:path');
 const { claimAutoStartDefault, loadConfig } = require('./config.cjs');
-const { appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, isFocusRequest, isReloadKey, resetRoute, updateAction } = require('./paths.cjs');
+const { PROTOCOL, appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, isFocusRequest, isReloadKey, protocolRoute, resetRoute, updateAction } = require('./paths.cjs');
 const { QUICK_SHORTCUTS, QUICK_TOKEN_SCRIPT, shortcutLabel } = require('./quick.cjs');
 const { startApi } = require('./server.cjs');
 const { trayIcon, windowIcon } = require('./icon.cjs');
@@ -13,6 +13,8 @@ app.setName(APP_NAME);
 // 개발 실행에서도 설치본과 같은 데이터 폴더(%APPDATA%\DevMata AI)를 쓴다.
 app.setPath('userData', join(app.getPath('appData'), APP_NAME));
 app.setAppUserModelId('ai.devmata.desktop');
+// 바탕화면 알림을 누르면 열리는 devmata:// 주소를 이 앱으로 연결한다 (개발 실행은 설치본 등록을 덮어쓰지 않게 건너뜀)
+if (app.isPackaged) app.setAsDefaultProtocolClient(PROTOCOL);
 
 let win = null;
 let tray = null;
@@ -20,12 +22,20 @@ let api = null;
 let quitting = false;
 let updater = null;
 let refreshTray = () => {};
-const startHidden = process.argv.includes('--hidden');
+// 알림을 눌러 꺼져 있던 앱이 켜졌으면 준비된 뒤 그 화면을 연다
+let pendingRoute = protocolRoute(process.argv);
+const startHidden = process.argv.includes('--hidden') && !pendingRoute;
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => showWindow());
+  // 이미 켜져 있을 때 다시 실행하거나 알림(devmata://)을 누르면 이 창을 앞으로 가져온다
+  app.on('second-instance', (_event, argv) => {
+    const route = protocolRoute(argv);
+    if (route && app.devmataUrl) { openInApp(route); return; }
+    if (route) pendingRoute = route; // 아직 서버를 띄우는 중: 준비되면 연다
+    showWindow();
+  });
   app.whenReady().then(start).catch(fail);
 }
 
@@ -72,7 +82,9 @@ async function start() {
   app.devmataUrl = `http://localhost:${config.port}/`;
   app.devmataPort = config.port;
   registerQuickShortcut();
-  if (win) await win.loadURL(app.devmataUrl);
+  const first = pendingRoute ? new URL(pendingRoute.slice(1), app.devmataUrl).toString() : app.devmataUrl;
+  pendingRoute = null;
+  if (win) await win.loadURL(first);
 }
 
 // 빠른 입력: 어디서든 단축키로 작은 창을 열어 한 줄로 할 일·일정을 넣는다.

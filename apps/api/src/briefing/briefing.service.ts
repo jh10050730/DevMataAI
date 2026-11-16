@@ -7,7 +7,7 @@ import { CalendarService } from '../calendar/calendar.service';
 import { DevLogService } from '../projects/devlog.service';
 import { koreanDay, koreanDayStart } from '../news/news.schedule';
 import { isWakeMessage } from '../notifications/notifications.service';
-import { desktopToastEnabled, showDesktopToast } from '../notifications/desktop-toast';
+import { desktopToastEnabled, showDesktopToast, toastLink } from '../notifications/desktop-toast';
 import { BriefingFacts, briefingDue, briefingTitle, clipLines, dayPart, fallbackBriefing, isEmptyDay, remainingEvents } from './briefing.logic';
 
 const DAY = 86_400_000;
@@ -73,9 +73,7 @@ export class BriefingService implements OnModuleInit, OnModuleDestroy {
 
   private toast(title: string, text: string) {
     if (!desktopToastEnabled()) return Promise.resolve(false);
-    let url: string | undefined;
-    try { url = this.mail.publicUrl('/').href; } catch { url = undefined; }
-    return showDesktopToast(title, text, url);
+    return showDesktopToast(title, text, toastLink('/', () => this.mail.publicUrl('/').href));
   }
 
   /** 오늘(한국 시간) 일정·마감·복습·뉴스 */

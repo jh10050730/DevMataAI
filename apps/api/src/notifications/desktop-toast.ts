@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process';
  * Windows 바탕화면 알림(토스트). 서버가 사용자 PC에서 돌기 때문에 브라우저를 닫아 둬도 화면 구석에 뜬다.
  * - Windows 가 아니거나 DESKTOP_NOTIFICATIONS=false 이면 아무것도 하지 않는다.
  * - 제목·본문은 명령줄이 아닌 환경변수(XML)로만 넘겨 PowerShell 명령에 섞이지 않게 한다.
- * - 알림을 누르면 기본 브라우저로 url 이 열린다.
+ * - 알림을 누르면 toastLink 로 만든 주소가 열린다: 데스크톱 앱이면 앱 창(devmata://), 아니면 기본 브라우저.
  */
 const POWERSHELL_APP_ID = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe';
 const SCRIPT = [
@@ -30,6 +30,18 @@ const escapeXml = (value: string) =>
 export function toastXml(title: string, body: string, url?: string) {
   const launch = url ? ` activationType="protocol" launch="${escapeXml(url)}"` : '';
   return `<toast${launch}><visual><binding template="ToastGeneric"><text>${escapeXml(title.slice(0, 120))}</text><text>${escapeXml(body.slice(0, 300))}</text><text placement="attribution">DevMata AI</text></binding></visual></toast>`;
+}
+
+/** 데스크톱 앱이 등록한 주소 형식. 앱이 이 주소를 받으면 창을 앞으로 가져와 path 화면을 연다 (apps/desktop/src/paths.cjs) */
+export const DESKTOP_PROTOCOL = 'devmata';
+
+/**
+ * 알림을 눌렀을 때 열 주소. 데스크톱 앱 안에서 돌면 앱 창으로 열고(devmata://open?path=…),
+ * 그렇지 않으면(웹 서버로 실행) 기본 브라우저에서 열 웹 주소를 쓴다.
+ */
+export function toastLink(path: string, webUrl: () => string | undefined, env: NodeJS.ProcessEnv = process.env) {
+  if (env.DEVMATA_DESKTOP === '1') return `${DESKTOP_PROTOCOL}://open?path=${encodeURIComponent(path.startsWith('/') ? path : `/${path}`)}`;
+  try { return webUrl(); } catch { return undefined; }
 }
 
 export function desktopToastEnabled(env: NodeJS.ProcessEnv = process.env, platform: string = process.platform) {

@@ -118,4 +118,27 @@ function isExternalUrl(url) {
   try { return ['http:', 'https:'].includes(new URL(url).protocol); } catch { return false; }
 }
 
-module.exports = { APP_DEFAULT_KEYS, appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, isFocusRequest, isReloadKey, resetRoute, updateAction };
+/** 알림을 누르면 열리는 주소 형식: devmata://open?path=/calendar (API 의 notifications/desktop-toast.ts 와 맞춘다) */
+const PROTOCOL = 'devmata';
+
+/**
+ * 실행 인자에서 devmata:// 주소를 찾아 앱 안 경로로 바꾼다. 앱 화면 경로(/로 시작)만 허용하고, 아니면 null.
+ * 앱이 꺼져 있으면 Windows 가 이 주소를 인자로 앱을 실행하고, 켜져 있으면 second-instance 로 넘어온다.
+ */
+function protocolRoute(argv) {
+  const raw = (Array.isArray(argv) ? argv : []).find(arg => typeof arg === 'string' && arg.toLowerCase().startsWith(`${PROTOCOL}:`));
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    if (url.hostname !== 'open') return null;
+    const path = url.searchParams.get('path') || '/';
+    if (!path.startsWith('/') || path.startsWith('//') || /[\\\u0000-\u001f]/.test(path)) return null;
+    const inApp = new URL(path, 'http://localhost/');
+    if (inApp.origin !== 'http://localhost') return null;
+    return inApp.pathname + inApp.search + inApp.hash;
+  } catch {
+    return null;
+  }
+}
+
+module.exports = { APP_DEFAULT_KEYS, PROTOCOL, protocolRoute, appPaths, apiEnv, appRoute, findClaude, folderTarget, loadAppDefaults, isAppUrl, isExternalUrl, isFocusRequest, isReloadKey, resetRoute, updateAction };
