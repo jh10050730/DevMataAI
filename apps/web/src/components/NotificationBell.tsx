@@ -64,7 +64,7 @@ export default function NotificationBell() {
         <Button variant="ghost" className="text-xs" disabled={busy} onClick={() => setConfirmClear(false)}>취소</Button>
       </div>}
       {error && <p role="alert" className="px-4 pt-3 text-sm text-red-500">{error}</p>}
-      <div className="workspace-scroll max-h-[min(60vh,460px)] overflow-y-auto">{!data && !error ? <Spinner /> : !data?.notifications.length ? <EmptyState icon={Bell} title="아직 도착한 알림이 없어요" description="마감 한 달·3주·1주·하루 전에 알려드려요." /> : data.notifications.map(notice => <div key={notice.id} className={`group relative border-b border-border/60 transition-colors hover:bg-surface-2 ${notice.readAt ? '' : 'bg-accent-soft/40'}`}>
+      <div className="workspace-scroll max-h-[min(60vh,460px)] overflow-y-auto">{!data && !error ? <Spinner /> : !data?.notifications.length ? <EmptyState icon={Bell} title="아직 도착한 알림이 없어요" description="마감 한 달·3주·1주·하루 전에, 반복 일정은 당일에만 알려드려요." /> : data.notifications.map(notice => <div key={notice.id} className={`group relative border-b border-border/60 transition-colors hover:bg-surface-2 ${notice.readAt ? '' : 'bg-accent-soft/40'}`}>
         <button disabled={busy} onClick={() => void read(notice)} className="block w-full p-4 pr-12 text-left">
           <p className="flex items-center gap-2 text-sm font-semibold">{!notice.readAt && <span className="size-1.5 shrink-0 rounded-full bg-accent" />}{notice.title}</p><p className="mt-2 break-words text-sm leading-6 text-muted">{notice.body}</p><p className="mt-2 text-xs text-muted">{new Date(notice.createdAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</p>
         </button>

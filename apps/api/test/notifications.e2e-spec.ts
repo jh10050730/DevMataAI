@@ -97,6 +97,28 @@ describe('deadline notifications', () => {
     expect(list).toEqual({ notifications: [], unreadCount: 0 });
     await api().delete('/api/notifications').expect(401);
   });
+  it('매주 월요일 학생회 회의는 한국 시간 당일에만 한 번, 다음 회차도 당일에 알림', async () => {
+    const at = (day: string, time = '00:00') => new Date(`${day}T${time}:00+09:00`);
+    const event = await db().event.create({ data: { userId: a.user.id, title: '학생회 회의', startAt: at('2026-11-02', '18:00'), endAt: at('2026-11-02', '19:00'), repeat: 'WEEKLY', repeatUntil: at('2026-11-23', '23:59') } });
+    const notices = () => db().notification.findMany({ where: { targetId: event.id } });
+    await db().notification.create({ data: { userId: a.user.id, targetType: 'EVENT', targetId: event.id, deadlineAt: event.endAt, milestone: 'THREE_WEEKS', title: '이전 사전 알림', body: '학생회 회의', href: '/calendar' } });
+    for (const now of [at('2026-10-12'), at('2026-11-01', '23:59')]) {
+      await service().sync(now);
+      expect(await notices()).toHaveLength(0);
+    }
+    await Promise.all([service().sync(at('2026-11-02')), service().sync(at('2026-11-02'))]);
+    await service().sync(at('2026-11-02', '18:30'));
+    expect(await notices()).toEqual([expect.objectContaining({ milestone: 'TODAY', title: '오늘 반복 일정', deadlineAt: at('2026-11-02', '18:00') })]);
+    await service().sync(at('2026-11-08', '23:59'));
+    expect(await notices()).toHaveLength(0);
+    await service().sync(at('2026-11-09', '09:00'));
+    expect(await notices()).toEqual([expect.objectContaining({ milestone: 'TODAY', deadlineAt: at('2026-11-09', '18:00') })]);
+    await service().sync(at('2026-11-09', '19:01'));
+    expect(await notices()).toHaveLength(0);
+    await service().sync(at('2026-11-30', '09:00'));
+    expect(await notices()).toHaveLength(0);
+    await db().event.delete({ where: { id: event.id } });
+  });
   it('알림 설정은 본인에게만 적용되고 인증·불필요한 필드는 차단', async () => {
     await api().get('/api/notifications').expect(401);
     await api().patch('/api/notifications/settings').set(auth()).send({ notificationInApp: false, notificationEmail: true }).expect(200);
